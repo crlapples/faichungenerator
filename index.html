@@ -104,6 +104,8 @@
         justify-content: center;
         min-height: 26rem; /* Reserve space to prevent layout shift */
         align-items: center;
+        /* Add this line to allow the container to animate its size changes */
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
       .fai-chun {
         background-color: #dc2626;
@@ -383,28 +385,45 @@
         const posterContainer = document.getElementById('posterContainer');
         const maxLength = 7;
         const orientation = document.querySelector('input[name="orientation"]:checked').value;
-
+      
         if (!textInput) {
           alert('Please enter some Chinese text.');
           return;
         }
-
+      
         const chineseCharRegex = /[\u4e00-\u9fa5]/;
         if (!chineseCharRegex.test(textInput)) {
             alert('Please enter valid Chinese characters.');
             return;
         }
-
+      
         if (textInput.length > maxLength) {
           alert(`Text must be ${maxLength} characters or fewer.`);
           return;
         }
-
-        posterContainer.innerHTML = `
-          <div class="fai-chun ${orientation}" style="background: ${selectedBackground};">
-            ${textInput}
-          </div>
-        `;
+      
+        // Clear any existing poster
+        posterContainer.innerHTML = '';
+      
+        // Create the new Fai Chun element
+        const faiChun = document.createElement('div');
+        faiChun.className = `fai-chun ${orientation}`;
+        faiChun.style.background = selectedBackground;
+        faiChun.textContent = textInput;
+      
+        // --- Animate its appearance ---
+        // 1. Set initial state (invisible and slightly smaller)
+        faiChun.style.opacity = '0';
+        faiChun.style.transform = 'scale(0.9)';
+      
+        // 2. Append the element to the DOM
+        posterContainer.appendChild(faiChun);
+      
+        // 3. Use a minimal timeout to trigger the CSS transition
+        setTimeout(() => {
+          faiChun.style.opacity = '1';
+          faiChun.style.transform = 'scale(1)';
+        }, 10);
       }
     </script>
 
