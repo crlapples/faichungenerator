@@ -127,35 +127,53 @@
           z-index: 2;
           height: 100%;
           width: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Noto Serif SC', serif;
-          font-size: 3.5rem;
-          color: #fde047;
-          font-weight: 900;
-          background-color: transparent;
+          display: flex; /* Use Flexbox for alignment */
+          align-items: center; /* Center items along the cross axis */
+          justify-content: space-around; /* Distribute space evenly */
+          padding: 0.5rem;
+          box-sizing: border-box;
+          /* REMOVE all font-related properties like font-family, font-size, color, etc. */
+      }
+
+      /* This is already in your code, but confirm it's there */
+      .fai-chun.vertical .fai-chun-text {
+          flex-direction: column; /* Stack images top-to-bottom */
+          writing-mode: unset; /* Unset old properties */
+          text-orientation: unset;
+      }
+
+      .fai-chun.horizontal .fai-chun-text {
+          flex-direction: row; /* Align images left-to-right */
+      }
+
+      .fai-chun.horizontal.rtl .fai-chun-text {
+          flex-direction: row-reverse; /* Align images right-to-left */
+      }
+
+      /* Add this new rule to style the images themselves */
+      .fai-chun-text img {
+          object-fit: contain; /* Ensure image scales within its box */
+      }
+
+      /* Define max sizes for the images inside vertical/horizontal layouts */
+      .fai-chun.vertical .fai-chun-text img {
+          max-width: 85%;
+          /* Allow height to be flexible but limit by container / character count */
+          max-height: calc(100% / 7); /* Allows up to 7 characters to fit */
+      }
+
+      .fai-chun.horizontal .fai-chun-text img {
+          max-height: 85%;
+          max-width: calc(100% / 7);
       }
       .fai-chun.vertical {
           width: 16rem;
           height: 24rem;
       }
-      .fai-chun.vertical .fai-chun-text {
-          writing-mode: vertical-rl;
-          text-orientation: upright;
-      }
       .fai-chun.horizontal {
           width: 100%;
           max-width: 36rem;
           height: 10rem;
-      }
-      .fai-chun.horizontal .fai-chun-text {
-          writing-mode: horizontal-tb;
-          text-orientation: mixed;
-          font-size: 3rem;
-      }
-      .fai-chun.horizontal.rtl .fai-chun-text {
-          direction: rtl;
       }
       #backgroundSelector {
         position: relative;
@@ -357,15 +375,9 @@
           width: 12rem;
           height: 18rem;
         }
-        .fai-chun.vertical .fai-chun-text {
-            font-size: 2.75rem;
-        }
         .fai-chun.horizontal {
           max-width: 28rem;
           height: 8rem;
-        }
-        .fai-chun.horizontal .fai-chun-text {
-          font-size: 2.5rem;
         }
       }
       @media (max-width: 480px) {
@@ -407,16 +419,10 @@
           height: 13.5rem;
           border-width: 6px;
         }
-        .fai-chun.vertical .fai-chun-text {
-            font-size: 2rem;
-        }
         .fai-chun.horizontal {
           max-width: 20rem;
           height: 7rem;
           border-width: 6px;
-        }
-        .fai-chun.horizontal .fai-chun-text {
-          font-size: 2rem;
         }
         #orientationSelector .radio-group,
         #directionSelector .radio-group {
@@ -627,26 +633,41 @@
           return;
         }
 
-        if (orientation === 'horizontal' && direction === 'rtl') {
-            textInput = textInput.split('').reverse().join('');
-        }
+        // We no longer need to reverse the string here; flexbox will handle it.
 
         posterContainer.innerHTML = '';
-        
+
         const faiChunContainer = document.createElement('div');
-        let faiChunClass = `fai-chun ${orientation} ${selectedBackgroundClass}`; // Add selected class
+        let faiChunClass = `fai-chun ${orientation} ${selectedBackgroundClass}`;
+        // The direction class is now handled by flex-direction in the CSS
         if (orientation === 'horizontal') {
             faiChunClass += ` ${direction}`;
         }
         faiChunContainer.className = faiChunClass;
-        // No longer need to set style.background here
         faiChunContainer.onclick = showSaveModal;
 
-        const textDiv = document.createElement('div');
-        textDiv.className = 'fai-chun-text';
-        textDiv.textContent = textInput;
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'fai-chun-text';
 
-        faiChunContainer.appendChild(textDiv);
+        // --- CORE CHANGE: Generate an image for each character ---
+        const characters = textInput.split('');
+        characters.forEach(char => {
+            const img = document.createElement('img');
+            // This path must match the folder you created!
+            img.src = `processed_web_characters/${char}.png`;
+            img.alt = char; // Good for accessibility
+
+            // Basic error handling if a character image is missing
+            img.onerror = () => {
+                console.warn(`Image for character "${char}" not found.`);
+                img.style.display = 'none'; // Hide the broken image icon
+                // You could add fallback text here if you want
+            };
+            imageContainer.appendChild(img);
+        });
+        // --- END OF CORE CHANGE ---
+
+        faiChunContainer.appendChild(imageContainer);
         posterContainer.appendChild(faiChunContainer);
 
         setTimeout(() => {
