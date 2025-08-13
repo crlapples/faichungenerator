@@ -524,8 +524,28 @@
     <script>
       let selectedBackgroundClass = "bg-1";
       const allBgClasses = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5"];
+      // This object will be populated with your character-to-filename mappings.
+      let characterMap = {};
 
       document.addEventListener('DOMContentLoaded', () => {
+          // --- NEW: Fetch the mapping file as soon as the page loads ---
+          fetch('character_map.json')
+              .then(response => {
+                  if (!response.ok) {
+                      throw new Error("character_map.json not found. Did you run the Python script?");
+                  }
+                  return response.json();
+              })
+              .then(data => {
+                  characterMap = data;
+                  console.log("Character map loaded successfully!");
+              })
+              .catch(error => {
+                  console.error("Error loading character map:", error);
+                  alert("Could not load character data. Please ensure 'character_map.json' exists.");
+              });
+          // --- END OF NEW FETCH LOGIC ---
+
           const backgroundChoicesContainer = document.getElementById('backgroundChoices');
           const inputSection = document.getElementById('inputSection');
           const tooltip = document.querySelector('#backgroundChoices .tooltip');
@@ -549,21 +569,21 @@
 
               const currentlySelected = backgroundChoicesContainer.querySelector('.selected');
               if (currentlySelected) currentlySelected.classList.remove('selected');
-              
+
               choice.classList.add('selected');
-              selectedBackgroundClass = choice.getAttribute('data-bg-class'); // Get class name
+              selectedBackgroundClass = choice.getAttribute('data-bg-class');
               backgroundChoicesContainer.classList.add('selection-made');
               tooltip.style.opacity = '0';
               inputSection.classList.add('visible');
-              
+
               if (document.getElementById('chineseText').value.trim()) {
                   generateFaiChun();
               }
 
               const existingFaiChun = posterContainer.querySelector('.fai-chun');
               if (existingFaiChun) {
-                  existingFaiChun.classList.remove(...allBgClasses); // Remove all possible bg classes
-                  existingFaiChun.classList.add(selectedBackgroundClass); // Add the new one
+                  existingFaiChun.classList.remove(...allBgClasses);
+                  existingFaiChun.classList.add(selectedBackgroundClass);
               }
           });
 
@@ -578,30 +598,18 @@
               }
 
               if (poster) {
-                  poster.classList.remove('vertical', 'horizontal', 'ltr', 'rtl');
-                  poster.classList.add(newOrientation);
-                  if (newOrientation === 'horizontal') {
-                      const currentDirection = document.querySelector('input[name="direction"]:checked').value;
-                      poster.classList.add(currentDirection);
-                  }
+                generateFaiChun(); // Re-generate to apply orientation correctly
               }
           });
 
           directionSelector.addEventListener('change', (event) => {
               const poster = posterContainer.querySelector('.fai-chun.horizontal');
               if (poster) {
-                  const newDirection = event.target.value;
-                  poster.classList.remove('ltr', 'rtl');
-                  poster.classList.add(newDirection);
-                  generateFaiChun();
+                  generateFaiChun(); // Re-generate to apply direction correctly
               }
           });
-          
-          confirmSaveButton.addEventListener('click', () => {
-              savePoster();
-              hideSaveModal();
-          });
 
+          confirmSaveButton.addEventListener('click', savePoster);
           cancelButton.addEventListener('click', hideSaveModal);
           modalOverlay.addEventListener('click', (event) => {
               if (event.target === modalOverlay) {
@@ -611,6 +619,12 @@
       });
 
       function generateFaiChun() {
+        // First, check if the character map has been loaded.
+        if (Object.keys(characterMap).length === 0) {
+            alert("Character data is still loading. Please try again in a moment.");
+            return;
+        }
+
         let textInput = document.getElementById('chineseText').value.trim();
         const posterContainer = document.getElementById('posterContainer');
         const maxLength = 7;
@@ -633,13 +647,10 @@
           return;
         }
 
-        // We no longer need to reverse the string here; flexbox will handle it.
-
         posterContainer.innerHTML = '';
 
         const faiChunContainer = document.createElement('div');
         let faiChunClass = `fai-chun ${orientation} ${selectedBackgroundClass}`;
-        // The direction class is now handled by flex-direction in the CSS
         if (orientation === 'horizontal') {
             faiChunClass += ` ${direction}`;
         }
@@ -649,23 +660,26 @@
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
 
-        // --- CORE CHANGE: Generate an image for each character ---
+        // Generate an image for each character using the map
         const characters = textInput.split('');
         characters.forEach(char => {
             const img = document.createElement('img');
-            // This path must match the folder you created!
-            img.src = `processed_web_characters/${char}.png`;
             img.alt = char; // Good for accessibility
 
-            // Basic error handling if a character image is missing
-            img.onerror = () => {
-                console.warn(`Image for character "${char}" not found.`);
-                img.style.display = 'none'; // Hide the broken image icon
-                // You could add fallback text here if you want
-            };
+            // --- CRITICAL CHANGE: Look up the filename in the map ---
+            const filename = characterMap[char];
+
+            if (filename) {
+                // If found, set the image source
+                img.src = `processed_web_characters/${filename}`;
+            } else {
+                // If a character image is missing from your set, handle it gracefully
+                console.warn(`Image for character "${char}" not found in map.`);
+                // You could optionally display a placeholder or hide it
+                img.style.display = 'none';
+            }
             imageContainer.appendChild(img);
         });
-        // --- END OF CORE CHANGE ---
 
         faiChunContainer.appendChild(imageContainer);
         posterContainer.appendChild(faiChunContainer);
@@ -675,7 +689,7 @@
           faiChunContainer.style.transform = 'scale(1)';
         }, 10);
       }
-      
+
       function showSaveModal() {
         document.getElementById('modalOverlay').classList.add('visible');
       }
@@ -688,9 +702,6 @@
         const poster = document.querySelector('.fai-chun');
         if (!poster) return;
 
-        // The onclone function is no longer needed!
-        // html2canvas will now correctly clone the element and its classes,
-        // and find the class definitions in the cloned stylesheet.
         html2canvas(poster, {
             useCORS: true,
             scale: 2,
