@@ -355,12 +355,13 @@
       .modal-button.primary:hover {
           background-color: #15803d;
       }
-      /* --- NEW ---: Pre-defined background classes */
-      .bg-1 { background: linear-gradient(to bottom, #c12127, #a81c21); }
-      .bg-2 { background: repeating-linear-gradient(45deg, rgba(255, 215, 0, 0.05), rgba(255, 215, 0, 0.05) 2px, transparent 2px, transparent 15px), repeating-linear-gradient(-45deg, rgba(255, 215, 0, 0.05), rgba(255, 215, 0, 0.05) 2px, transparent 2px, transparent 15px), linear-gradient(to bottom, #c12127, #a81c21); }
-      .bg-3 { background: repeating-linear-gradient(to bottom, rgba(255,255,255,0.02), rgba(255,255,255,0.05) 1px, rgba(0,0,0,0.02) 2px), linear-gradient(to bottom, #b91c1c, #991b1b); }
-      .bg-4 { background: linear-gradient(to bottom, #5b21b6, #4c1d95); }
-      .bg-5 { background: linear-gradient(to bottom, #047857, #065f46); }
+      #colorPickerLabel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        background-color: #f3f4f6;
+      }
 
 
       /* --- NEW ---: Responsive styles for mobile and tablet */
@@ -472,12 +473,17 @@
 
       <div id="backgroundSelector">
         <div id="backgroundChoices">
-            <p class="tooltip">Backgrounds</p>
-            <div class="background-choice bg-1" data-bg-class="bg-1"><div class="checkmark">✓</div></div>
-            <div class="background-choice bg-2" data-bg-class="bg-2"><div class="checkmark">✓</div></div>
-            <div class="background-choice bg-3" data-bg-class="bg-3"><div class="checkmark">✓</div></div>
-            <div class="background-choice bg-4" data-bg-class="bg-4"><div class="checkmark">✓</div></div>
-            <div class="background-choice bg-5" data-bg-class="bg-5"><div class="checkmark">✓</div></div>
+            <p class="tooltip">Background Color</p>
+            <!-- Default White Option -->
+            <div class="background-choice" data-color="#FFFFFF" style="background-color: #FFFFFF;">
+                <div class="checkmark">✓</div>
+            </div>
+            <!-- The User Color Picker -->
+            <label class="background-choice" id="colorPickerLabel">
+                🎨
+                <input type="color" id="colorPickerInput" value="#dc2626" style="opacity: 0; position: absolute; width: 100%; height: 100%; cursor: pointer;">
+                <div class="checkmark">✓</div>
+            </label>
         </div>
       </div>
 
@@ -523,30 +529,11 @@
     </div>
 
     <script>
-      let selectedBackgroundClass = "bg-1";
-      const allBgClasses = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5"];
-      // This object will be populated with your character-to-filename mappings.
-      let characterMap = {};
+      // The default background color is now white.
+      let selectedBackgroundColor = "#FFFFFF";
+      const allBgClasses = ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5"]; // Kept for cleanup, but not used for setting color
 
       document.addEventListener('DOMContentLoaded', () => {
-          // --- NEW: Fetch the mapping file as soon as the page loads ---
-          fetch('character_map.json')
-              .then(response => {
-                  if (!response.ok) {
-                      throw new Error("character_map.json not found. Did you run the Python script?");
-                  }
-                  return response.json();
-              })
-              .then(data => {
-                  characterMap = data;
-                  console.log("Character map loaded successfully!");
-              })
-              .catch(error => {
-                  console.error("Error loading character map:", error);
-                  alert("Could not load character data. Please ensure 'character_map.json' exists.");
-              });
-          // --- END OF NEW FETCH LOGIC ---
-
           const backgroundChoicesContainer = document.getElementById('backgroundChoices');
           const inputSection = document.getElementById('inputSection');
           const tooltip = document.querySelector('#backgroundChoices .tooltip');
@@ -556,77 +543,86 @@
           const modalOverlay = document.getElementById('modalOverlay');
           const confirmSaveButton = document.getElementById('confirmSaveButton');
           const cancelButton = document.getElementById('cancelButton');
+          const colorPickerInput = document.getElementById('colorPickerInput');
+          const colorPickerLabel = document.getElementById('colorPickerLabel');
 
+          // --- LOGIC FOR THE WHITE BOX AND OTHER PRESET DIVS ---
           backgroundChoicesContainer.addEventListener('click', (event) => {
-              const choice = event.target.closest('.background-choice');
-              if (!choice) return;
+              const choice = event.target.closest('.background-choice[data-color]');
+              if (!choice) return; // Only act on clicks to the white div
 
+              // Deselect if already selected
               if (choice.classList.contains('selected')) {
                   backgroundChoicesContainer.classList.remove('selection-made');
                   tooltip.style.opacity = '1';
                   inputSection.classList.remove('visible');
                   return;
               }
-
+              
+              // Remove .selected from any other choice
               const currentlySelected = backgroundChoicesContainer.querySelector('.selected');
               if (currentlySelected) currentlySelected.classList.remove('selected');
-
+              
               choice.classList.add('selected');
-              selectedBackgroundClass = choice.getAttribute('data-bg-class');
+              selectedBackgroundColor = choice.getAttribute('data-color');
+              
+              // Trigger UI animations
               backgroundChoicesContainer.classList.add('selection-made');
               tooltip.style.opacity = '0';
               inputSection.classList.add('visible');
-
-              if (document.getElementById('chineseText').value.trim()) {
-                  generateFaiChun();
-              }
-
-              const existingFaiChun = posterContainer.querySelector('.fai-chun');
-              if (existingFaiChun) {
-                  existingFaiChun.classList.remove(...allBgClasses);
-                  existingFaiChun.classList.add(selectedBackgroundClass);
-              }
+              
+              updateFaiChunBackground();
           });
 
+          // --- LOGIC FOR THE COLOR PICKER INPUT ---
+          colorPickerInput.addEventListener('change', (event) => {
+              const newColor = event.target.value;
+              selectedBackgroundColor = newColor;
+
+              // Update the label's background to show the new color
+              colorPickerLabel.style.backgroundColor = newColor;
+
+              // Deselect the other option and select this one
+              const currentlySelected = backgroundChoicesContainer.querySelector('.selected');
+              if (currentlySelected) currentlySelected.classList.remove('selected');
+              colorPickerLabel.classList.add('selected');
+
+              // Trigger UI animations if not already visible
+              if (!inputSection.classList.contains('visible')) {
+                  backgroundChoicesContainer.classList.add('selection-made');
+                  tooltip.style.opacity = '0';
+                  inputSection.classList.add('visible');
+              }
+              
+              updateFaiChunBackground();
+          });
+
+          function updateFaiChunBackground() {
+              const existingFaiChun = posterContainer.querySelector('.fai-chun');
+              if (existingFaiChun) {
+                  existingFaiChun.classList.remove(...allBgClasses); // Clean up old classes
+                  existingFaiChun.style.backgroundColor = selectedBackgroundColor; // Set color directly
+              }
+          }
+
           orientationSelector.addEventListener('change', (event) => {
-              const poster = posterContainer.querySelector('.fai-chun');
-              const newOrientation = event.target.value;
-
-              if (newOrientation === 'horizontal') {
-                  directionSelector.style.display = 'block';
-              } else {
-                  directionSelector.style.display = 'none';
-              }
-
-              if (poster) {
-                generateFaiChun(); // Re-generate to apply orientation correctly
-              }
+              if (document.getElementById('chineseText').value.trim()) generateFaiChun();
           });
 
           directionSelector.addEventListener('change', (event) => {
-              const poster = posterContainer.querySelector('.fai-chun.horizontal');
-              if (poster) {
-                  generateFaiChun(); // Re-generate to apply direction correctly
-              }
+              if (document.getElementById('chineseText').value.trim()) generateFaiChun();
           });
-
+          
           confirmSaveButton.addEventListener('click', savePoster);
           cancelButton.addEventListener('click', hideSaveModal);
           modalOverlay.addEventListener('click', (event) => {
-              if (event.target === modalOverlay) {
-                  hideSaveModal();
-              }
+              if (event.target === modalOverlay) hideSaveModal();
           });
       });
 
       function generateFaiChun() {
-        // First, check if the character map has been loaded.
-        if (Object.keys(characterMap).length === 0) {
-            alert("Character data is still loading. Please try again in a moment.");
-            return;
-        }
-
         let textInput = document.getElementById('chineseText').value.trim();
+        const characterCount = textInput.length;
         const posterContainer = document.getElementById('posterContainer');
         const maxLength = 7;
         const orientation = document.querySelector('input[name="orientation"]:checked').value;
@@ -649,36 +645,28 @@
         }
 
         posterContainer.innerHTML = '';
-
+        
         const faiChunContainer = document.createElement('div');
-        let faiChunClass = `fai-chun ${orientation} ${selectedBackgroundClass}`;
+        let faiChunClass = `fai-chun ${orientation}`;
         if (orientation === 'horizontal') {
             faiChunClass += ` ${direction}`;
         }
         faiChunContainer.className = faiChunClass;
+        
+        // --- KEY CHANGE: Set background color directly ---
+        faiChunContainer.style.backgroundColor = selectedBackgroundColor;
         faiChunContainer.onclick = showSaveModal;
 
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
+        imageContainer.classList.add(`char-count-${characterCount}`);
 
-        // Generate an image for each character using the map
         const characters = textInput.split('');
         characters.forEach(char => {
             const img = document.createElement('img');
-            img.alt = char; // Good for accessibility
-
-            // --- CRITICAL CHANGE: Look up the filename in the map ---
-            const filename = characterMap[char];
-
-            if (filename) {
-                // If found, set the image source
-                img.src = `processed_web_characters/${filename}`;
-            } else {
-                // If a character image is missing from your set, handle it gracefully
-                console.warn(`Image for character "${char}" not found in map.`);
-                // You could optionally display a placeholder or hide it
-                img.style.display = 'none';
-            }
+            img.src = `processed_web_characters/${char}.png`; // Assumes files are renamed
+            img.alt = char;
+            img.onerror = () => { img.style.display = 'none'; };
             imageContainer.appendChild(img);
         });
 
@@ -690,7 +678,7 @@
           faiChunContainer.style.transform = 'scale(1)';
         }, 10);
       }
-
+      
       function showSaveModal() {
         document.getElementById('modalOverlay').classList.add('visible');
       }
