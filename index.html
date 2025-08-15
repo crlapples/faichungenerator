@@ -260,7 +260,7 @@
         margin-bottom: 3rem;
       }
       #inputSection.visible {
-        max-height: 360px;
+        max-height: 480px;
         opacity: 1;
         pointer-events: auto;
       }
@@ -513,7 +513,6 @@
       .padding-slider {
         display: flex;
         flex-direction: column;
-        align-items: center;
         font-size: 0.9rem;
         color: #4b5563;
       }
@@ -525,6 +524,18 @@
       .padding-slider input[type="range"] {
         width: 100%;
         accent-color: #dc2626; /* Match your theme color */
+      }
+
+            /* --- NEW: Styles for Slider Value Indicators --- */
+      .slider-label-container {
+        display: flex;
+        justify-content: space-between; /* Aligns "Label" left and "5%" right */
+        width: 100%;
+      }
+
+      .slider-value {
+        font-weight: bold;
+        color: #1f2937; /* Darker text for better visibility */
       }
 
 
@@ -679,6 +690,9 @@
         .padding-slider label {
           font-size: 0.9rem; /* Match other mobile font sizes */
         }
+        .padding-slider {
+          font-size: 0.9rem;
+        }
       }
     </style>
 </head>
@@ -771,20 +785,36 @@
         <div id="paddingControls">
             <p class="tooltip">Character Margins (%)</p>
             <div class="padding-grid">
+                <!-- Top Slider -->
                 <div class="padding-slider">
-                    <label for="paddingTop">Top</label>
+                    <div class="slider-label-container">
+                        <label for="paddingTop">Top</label>
+                        <span id="paddingTopValue" class="slider-value">5%</span>
+                    </div>
                     <input type="range" id="paddingTop" min="0" max="40" value="5">
                 </div>
+                <!-- Bottom Slider -->
                 <div class="padding-slider">
-                    <label for="paddingBottom">Bottom</label>
+                    <div class="slider-label-container">
+                        <label for="paddingBottom">Bottom</label>
+                        <span id="paddingBottomValue" class="slider-value">5%</span>
+                    </div>
                     <input type="range" id="paddingBottom" min="0" max="40" value="5">
                 </div>
+                <!-- Left Slider -->
                 <div class="padding-slider">
-                    <label for="paddingLeft">Left</label>
+                    <div class="slider-label-container">
+                        <label for="paddingLeft">Left</label>
+                        <span id="paddingLeftValue" class="slider-value">5%</span>
+                    </div>
                     <input type="range" id="paddingLeft" min="0" max="40" value="5">
                 </div>
+                <!-- Right Slider -->
                 <div class="padding-slider">
-                    <label for="paddingRight">Right</label>
+                    <div class="slider-label-container">
+                        <label for="paddingRight">Right</label>
+                        <span id="paddingRightValue" class="slider-value">5%</span>
+                    </div>
                     <input type="range" id="paddingRight" min="0" max="40" value="5">
                 </div>
             </div>
@@ -849,20 +879,34 @@
           const paddingBottomSlider = document.getElementById('paddingBottom');
           const paddingLeftSlider = document.getElementById('paddingLeft');
 
+          const paddingTopValue = document.getElementById('paddingTopValue');
+          const paddingRightValue = document.getElementById('paddingRightValue');
+          const paddingBottomValue = document.getElementById('paddingBottomValue');
+          const paddingLeftValue = document.getElementById('paddingLeftValue');
+
+                    // --- Replace the old slider listeners with this block ---
           paddingTopSlider.addEventListener('input', (event) => {
-              paddingTop = event.target.value;
-              generateFaiChun(); // Re-render on change
+              const value = event.target.value;
+              paddingTop = value;
+              paddingTopValue.textContent = `${value}%`; // Update the indicator
+              generateFaiChun();
           });
           paddingRightSlider.addEventListener('input', (event) => {
-              paddingRight = event.target.value;
+              const value = event.target.value;
+              paddingRight = value;
+              paddingRightValue.textContent = `${value}%`; // Update the indicator
               generateFaiChun();
           });
           paddingBottomSlider.addEventListener('input', (event) => {
-              paddingBottom = event.target.value;
+              const value = event.target.value;
+              paddingBottom = value;
+              paddingBottomValue.textContent = `${value}%`; // Update the indicator
               generateFaiChun();
           });
           paddingLeftSlider.addEventListener('input', (event) => {
-              paddingLeft = event.target.value;
+              const value = event.target.value;
+              paddingLeft = value;
+              paddingLeftValue.textContent = `${value}%`; // Update the indicator
               generateFaiChun();
           });
 
