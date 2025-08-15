@@ -986,7 +986,7 @@
         >
         <button
           id="createBtn"
-          onclick="generateFaiChun()"
+          onclick="generateFaiChun() , fullscreenPopup()"
           class="generate-button"
         >
           Create
@@ -1413,6 +1413,9 @@
             }
         }
         setTimeout(() => smoothScrollTo(posterContainer), 50);
+      }
+
+      async function fullscreenPopup() {
         const posterElement = posterContainer.querySelector('.fai-chun');
         if (posterElement) {
             // Clear any previous content
