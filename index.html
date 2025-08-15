@@ -1087,119 +1087,83 @@
       }
 
       /**
- * Saves the generated Fai Chun by building a pristine, off-screen element
- * from the current state and rendering it with html2canvas. This is the most
- * reliable method, avoiding any issues from cloning a live on-screen element.
+ * A recursive helper function that copies all computed CSS styles from a source element
+ * to a target element. This is crucial for creating a perfect, self-contained clone
+ * for html2canvas.
+ * @param {HTMLElement} source - The element to read styles from.
+ * @param {HTMLElement} target - The element to apply styles to.
+ */
+function applyComputedStyles(source, target) {
+    const computedStyle = window.getComputedStyle(source);
+    for (const property of computedStyle) {
+        target.style.setProperty(property, computedStyle.getPropertyValue(property), computedStyle.getPropertyPriority(property));
+    }
+
+    // Recursively apply styles to all children
+    for (let i = 0; i < source.children.length; i++) {
+        applyComputedStyles(source.children[i], target.children[i]);
+    }
+}
+
+
+/**
+ * Saves the generated Fai Chun using the most robust method:
+ * 1. Clones the on-screen element.
+ * 2. Recursively copies every computed CSS style from the original to the clone,
+ *    "baking" the styles in.
+ * 3. Waits for all images in the clone to load.
+ * 4. Renders the perfect, self-contained clone with html2canvas.
  */
 async function savePoster() {
-    // 1. Get all current state variables needed to build the poster.
-    const textInput = document.getElementById('chineseText').value.trim();
-    const orientation = document.querySelector('input[name="orientation"]:checked').value;
-    const direction = document.querySelector('input[name="direction"]:checked').value;
-
-    // Guard clause: If there's no text, there's nothing to save.
-    if (!textInput) {
-        console.error("Save failed: No text to generate.");
+    // 1. Target the original, stable poster element on the screen.
+    const originalPoster = document.querySelector('#posterContainer .fai-chun');
+    
+    if (!originalPoster) {
+        console.error("Save failed: Original poster element not found.");
         hideSaveModal();
         return;
     }
 
-    // 2. Create the elements for the off-screen poster from scratch.
-    const saveContainer = document.createElement('div');
-    const imageContainer = document.createElement('div');
-    
-    // 3. Apply classes and styles based on the current state.
-    let faiChunClass = `fai-chun ${orientation}`;
-    if (orientation === 'horizontal') {
-        faiChunClass += ` ${direction}`;
-    }
-    saveContainer.className = faiChunClass;
+    // 2. Create a deep clone of the element and its entire structure.
+    const clone = originalPoster.cloneNode(true);
 
-    // Apply background color or transparency
-    if (isTransparentMode) {
-        saveContainer.classList.add('fai-chun-transparent');
-    } else {
-        saveContainer.style.backgroundColor = selectedBackgroundColor;
-    }
+    // 3. Apply all computed styles from the original to the clone, recursively.
+    // This is the key step that "bakes" your stylesheet CSS into the clone.
+    applyComputedStyles(originalPoster, clone);
 
-    // Apply padding and character count class to the inner container
-    imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
-    imageContainer.className = `fai-chun-text char-count-${textInput.length}`;
+    // 4. Prepare the clone for invisible, on-screen rendering.
+    clone.style.position = 'fixed';
+    clone.style.top = '0';
+    clone.style.left = '0';
+    clone.style.zIndex = '-1';
+    clone.style.opacity = '0';
 
-    // Calculate and apply character spacing (gap)
-    let finalGapValue = "0";
-    if (orientation === 'horizontal') {
-        imageContainer.style.justifyContent = 'center';
-        imageContainer.style.alignItems = 'center';
-        switch (characterSpacing) {
-            case 'none':    finalGapValue = '1rem'; break;
-            case 'quarter': finalGapValue = '1.5vw'; break;
-            case 'third':   finalGapValue = '2vw'; break;
-            case 'half':    finalGapValue = '3vw'; break;
-            case 'full':    finalGapValue = '5vw'; break;
-        }
-    } else { // Vertical
-        imageContainer.style.justifyContent = 'center';
-        switch (characterSpacing) {
-            case 'none':    finalGapValue = '1rem'; break;
-            case 'quarter': finalGapValue = '1.5vh'; break;
-            case 'third':   finalGapValue = '2vh'; break;
-            case 'half':    finalGapValue = '3vh'; break;
-            case 'full':    finalGapValue = '5vh'; break;
-        }
-    }
-    imageContainer.style.gap = finalGapValue;
-
-    saveContainer.appendChild(imageContainer);
-
-    // 4. Generate and append character images.
-    const characters = textInput.split('');
-    const imageLoadPromises = [];
-
-    for (const char of characters) {
-        try {
-            // This reuses the existing function to create the colored character image
-            const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
-            const img = document.createElement('img');
-            img.src = coloredImageDataUrl;
-            const wrapperDiv = document.createElement('div');
-            wrapperDiv.className = 'char-wrapper';
-            
-            // Create a promise that resolves when this specific image loads
-            const loadPromise = new Promise(resolve => {
-                img.onload = resolve;
-                img.onerror = resolve; // Resolve on error too so it doesn't hang
-            });
-            imageLoadPromises.push(loadPromise);
-
-            wrapperDiv.appendChild(img);
-            imageContainer.appendChild(wrapperDiv);
-        } catch (error) {
-            console.error("Failed to create a character for saving:", error);
-        }
-    }
-
-    // 5. Prepare the pristine element for invisible, on-screen rendering.
-    saveContainer.style.position = 'fixed';
-    saveContainer.style.top = '0';
-    saveContainer.style.left = '0';
-    saveContainer.style.zIndex = '-1'; // Render behind everything
-    saveContainer.style.opacity = '0'; // Make it invisible
-
-    // 6. Append to the body, wait for all images to load, then render.
-    document.body.appendChild(saveContainer);
+    // 5. Append the clone to the body to start the rendering process.
+    document.body.appendChild(clone);
 
     try {
-        // Wait for every single generated character image to be fully loaded.
+        // 6. Wait for all images inside the now perfectly-styled clone to fully load.
+        const images = clone.querySelectorAll('img');
+        const imageLoadPromises = Array.from(images).map(img => {
+            return new Promise(resolve => {
+                if (img.complete) {
+                    resolve();
+                } else {
+                    img.onload = resolve;
+                    img.onerror = resolve; // Don't hang if an image fails
+                }
+            });
+        });
+
         await Promise.all(imageLoadPromises);
 
-        // Now it's 100% safe to render the container with html2canvas.
-        const canvas = await html2canvas(saveContainer, {
-            backgroundColor: null, // Use null for transparency support
-            scale: 3 // Render at 3x resolution for high quality
+        // 7. Render the perfectly prepared clone.
+        const canvas = await html2canvas(clone, {
+            backgroundColor: null,
+            scale: 3 // High-resolution rendering
         });
         
-        // Trigger the download.
+        // 8. Trigger the download.
         const link = document.createElement('a');
         link.download = 'fai-chun.png';
         link.href = canvas.toDataURL('image/png');
@@ -1208,10 +1172,9 @@ async function savePoster() {
     } catch (error) {
         console.error("Error during html2canvas rendering:", error);
     } finally {
-        // 7. CRITICAL: Always clean up by removing the temporary element.
-        document.body.removeChild(saveContainer);
+        // 9. CRITICAL: Clean up by removing the clone from the DOM.
+        document.body.removeChild(clone);
         
-        // Hide any modals that might be open.
         hideSaveModal();
         hidePreview();
     }
