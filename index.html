@@ -1381,6 +1381,7 @@
         let finalGapValue = "0";
         if (orientation === 'horizontal') {
             imageContainer.style.justifyContent = 'center';
+            imageContainer.style.alignItems = 'center';
              switch (characterSpacing) {
                 case 'none':    finalGapValue = '1rem'; break; // A reasonable default gap
                 case 'quarter': finalGapValue = '1.5vw'; break;
@@ -1513,6 +1514,8 @@
           flex-grow: 0;
         }
       `;
+      const existingStyleSheet = document.querySelector('style[data-generated="sizing"]');
+      if (existingStyleSheet) existingStyleSheet.remove();
       const styleSheet = document.createElement("style");
       styleSheet.innerText = sizingStyles;
       document.head.appendChild(styleSheet);
