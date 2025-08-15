@@ -76,6 +76,8 @@
         padding-right: 6rem;
         margin-top: 3rem;
         margin-bottom: 3rem;
+        margin-left: 6rem;
+        margin-right: 6rem;
       }
       .title {
         font-size: 1.75rem;
@@ -150,6 +152,17 @@
       .fai-chun.horizontal.rtl .fai-chun-text {
           flex-direction: row-reverse; /* Align images right-to-left */
       }
+      .fai-chun.vertical {
+                width: 16rem;
+                height: 30rem;
+            }
+            
+            /* --- DELETE THIS ENTIRE RULE --- */
+      .fai-chun.horizontal {
+                width: 100%;
+                max-width: 36rem;
+                height: 10rem;
+            }
 
             /* REPLACE IT WITH THIS */
       .char-wrapper img {
@@ -158,26 +171,6 @@
         object-fit: contain;
       }
 
-      /* Define max sizes for the images inside vertical/horizontal layouts */
-      .fai-chun.vertical .fai-chun-text img {
-          max-width: 85%;
-          /* Allow height to be flexible but limit by container / character count */
-          max-height: calc(100% / 7); /* Allows up to 7 characters to fit */
-      }
-
-      .fai-chun.horizontal .fai-chun-text img {
-          max-height: 85%;
-          max-width: calc(100% / 7);
-      }
-      .fai-chun.vertical {
-          width: 16rem;
-          height: 24rem;
-      }
-      .fai-chun.horizontal {
-          width: 100%;
-          max-width: 36rem;
-          height: 10rem;
-      }
       #backgroundSelector {
         position: relative;
         margin-bottom: 1.5rem;
@@ -579,13 +572,17 @@
         .generator-container {
           padding-left: 2rem;
           padding-right: 2rem;
+          margin-top: 2rem;
+          margin-bottom: 2rem;
+          margin-left: 1rem;
+          margin-right: 1rem;
         }
         .title {
           font-size: 1.5rem;
         }
         .fai-chun.vertical {
           width: 12rem;
-          height: 18rem;
+          height: 24rem;
         }
         .fai-chun.horizontal {
           max-width: 28rem;
@@ -623,6 +620,10 @@
           padding-left: 1rem;
           padding-right: 1rem;
           width: 95%;
+          margin-top: 1.2rem;
+          margin-bottom: 1.2rem;
+          margin-left: 0.5rem;
+          margin-right: 0.5rem;
         }
         .title {
           font-size: 1.25rem;
@@ -651,7 +652,7 @@
         }
         .fai-chun.vertical {
           width: 9rem;
-          height: 13.5rem;
+          height: 20rem;
           border-width: 6px;
         }
         .fai-chun.horizontal {
@@ -914,7 +915,7 @@
       let selectedTextColor = null;
       let isBgColorSelected = false;
       let isTextColorSelected = false;
-      let isTransparentMode = false; // <-- THIS WAS MISSING
+      let isTransparentMode = false;
       let paddingTop = 5;
       let paddingRight = 5;
       let paddingBottom = 5;
@@ -922,6 +923,12 @@
       let characterSpacing = "none";
       let characterMap = {};
 
+      /**
+       * Creates a colored version of a character image.
+       * @param {string} char The character to color.
+       * @param {string} color The hex color string.
+       * @returns {Promise<string>} A promise that resolves with the Data URL of the colored image.
+       */
       function createColoredCharacter(char, color) {
           return new Promise((resolve, reject) => {
               const filename = characterMap[char];
@@ -939,19 +946,10 @@
                   canvas.width = img.width;
                   canvas.height = img.height;
                   const ctx = canvas.getContext('2d');
-
-                  // Step 1: Fill the canvas with the target color
                   ctx.fillStyle = color;
                   ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                  // Step 2: Use the character image as a mask
-                  // 'destination-in' means "keep the destination (the color) where the source (the character) is".
                   ctx.globalCompositeOperation = 'destination-in';
-                  
-                  // Step 3: Draw the character image
                   ctx.drawImage(img, 0, 0);
-
-                  // Resolve the promise with the new image data
                   resolve(canvas.toDataURL('image/png'));
               };
 
@@ -961,6 +959,55 @@
 
               img.src = imageUrl;
           });
+      }
+
+      /**
+       * Displays the save confirmation modal dialog.
+       */
+      function showSaveModal() {
+        const posterElement = document.querySelector('#posterContainer .fai-chun');
+        if (posterElement) {
+            document.getElementById('modalOverlay').classList.add('visible');
+        }
+      }
+
+      /**
+       * Hides the save confirmation modal dialog.
+       */
+      function hideSaveModal() {
+          document.getElementById('modalOverlay').classList.remove('visible');
+      }
+
+      function smoothScrollTo(element) {
+          if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+      }
+
+      /**
+       * Saves the generated Fai Chun poster as a PNG image using html2canvas.
+       */
+      async function savePoster() {
+          const posterElement = document.querySelector('#posterContainer .fai-chun');
+          if (!posterElement) {
+              hideSaveModal();
+              return;
+          }
+
+          try {
+              const canvas = await html2canvas(posterElement, {
+                  backgroundColor: null,
+                  scale: 3
+              });
+              const link = document.createElement('a');
+              link.download = 'fai-chun.png';
+              link.href = canvas.toDataURL('image/png');
+              link.click();
+          } catch (error) {
+              console.error("Failed to save poster:", error);
+          } finally {
+              hideSaveModal();
+          }
       }
 
       document.addEventListener('DOMContentLoaded', () => {
@@ -980,6 +1027,9 @@
           const textColorPickerInput = document.getElementById('textColorPickerInput');
           const textColorPickerLabel = document.getElementById('textColorPickerLabel');
           const textConfirmBtn = document.getElementById('textConfirmBtn');
+          const orientationRadios = document.querySelectorAll('input[name="orientation"]');
+          const directionSelector = document.getElementById('directionSelector');
+          const chineseTextInput = document.getElementById('chineseText');
 
           // Sliders and Value Displays
           const paddingTopSlider = document.getElementById('paddingTop');
@@ -995,7 +1045,7 @@
               container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
           }
 
-          // --- CORRECTED UI STATE CONTROLLER ---
+          // --- UI STATE CONTROLLER ---
           function checkUiState() {
               if (isBgColorSelected || isTransparentMode) {
                   textColorSelector.classList.remove('hidden');
@@ -1004,16 +1054,21 @@
               if ((isBgColorSelected || isTransparentMode) && isTextColorSelected) {
                   inputSection.classList.add('visible');
               }
-              if (document.getElementById('chineseText').value.trim()) {
-                  generateFaiChun();
-              }
           }
+          
+          // --- EVENT LISTENER FOR TEXT INPUT (Enter Key) ---
+          chineseTextInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault(); // Prevent form submission if it's in a form
+              generateFaiChun();
+            }
+          });
+
 
           // --- EVENT LISTENERS FOR BACKGROUND COLOR ---
           bgChoicesContainer.addEventListener('click', (event) => {
               const choice = event.target.closest('.background-choice');
               if (!choice) return;
-
               deselectAll(bgChoicesContainer);
               choice.classList.add('selected');
 
@@ -1027,6 +1082,8 @@
                   selectedBackgroundColor = choice.dataset.color;
               }
               checkUiState();
+              generateFaiChun();
+              setTimeout(() => smoothScrollTo(textColorSelector), 200);
           });
 
           bgColorPickerInput.addEventListener('input', (event) => {
@@ -1040,6 +1097,8 @@
               isBgColorSelected = true;
               selectedBackgroundColor = bgColorPickerInput.value;
               checkUiState();
+              generateFaiChun();
+              setTimeout(() => smoothScrollTo(textColorSelector), 200);
           });
           
           // --- EVENT LISTENERS FOR TEXT COLOR ---
@@ -1051,6 +1110,8 @@
               selectedTextColor = choice.getAttribute('data-color');
               isTextColorSelected = true;
               checkUiState();
+              generateFaiChun();
+              setTimeout(() => smoothScrollTo(inputSection), 200);
           });
           
           textColorPickerInput.addEventListener('input', (event) => {
@@ -1063,6 +1124,8 @@
               selectedTextColor = textColorPickerInput.value;
               isTextColorSelected = true;
               checkUiState();
+              generateFaiChun();
+              setTimeout(() => smoothScrollTo(inputSection), 200);
           });
           
           // --- SLIDER LISTENERS ---
@@ -1097,6 +1160,17 @@
           document.getElementById('orientationSelector').addEventListener('change', generateFaiChun);
           document.getElementById('directionSelector').addEventListener('change', generateFaiChun);
 
+          orientationRadios.forEach(radio => {
+              radio.addEventListener('change', (event) => {
+                  if (event.target.value === 'horizontal') {
+                      directionSelector.style.display = 'block';
+                  } else {
+                      directionSelector.style.display = 'none';
+                  }
+              });
+          });
+
+          // --- MODAL DIALOG LISTENERS ---
           const modalOverlay = document.getElementById('modalOverlay');
           const confirmSaveButton = document.getElementById('confirmSaveButton');
           const cancelButton = document.getElementById('cancelButton');
@@ -1104,110 +1178,124 @@
           confirmSaveButton.addEventListener('click', savePoster);
           cancelButton.addEventListener('click', hideSaveModal);
           modalOverlay.addEventListener('click', (event) => {
-              // Only hide if the click is on the dark overlay itself, not the white box
               if (event.target === modalOverlay) {
                   hideSaveModal();
               }
           });
       });
 
-                  // --- REPLACE YOUR ENTIRE FUNCTION WITH THIS ---
+            // --- Replace your entire old function with this new, corrected version ---
       async function generateFaiChun() {
-        if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) {
-            return;
-        }
+        // Guard clause: Don't run if colors aren't selected or the map isn't loaded.
+        if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) return;
 
+        // Get current settings from the UI
         let textInput = document.getElementById('chineseText').value.trim();
         const posterContainer = document.getElementById('posterContainer');
         const orientation = document.querySelector('input[name="orientation"]:checked').value;
-
-        if (!textInput) {
-          posterContainer.innerHTML = '';
-          return;
+        
+        // If there's no text, clear the poster and stop.
+        if (!textInput) { 
+            posterContainer.innerHTML = ''; 
+            return; 
         }
 
+        // --- Core Logic: Always rebuild from scratch for 100% accuracy ---
         posterContainer.innerHTML = '';
+        
         const faiChunContainer = document.createElement('div');
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'fai-chun-text';
+        
+        faiChunContainer.appendChild(imageContainer);
+        posterContainer.appendChild(faiChunContainer);
+        faiChunContainer.onclick = showSaveModal;
+
+        // --- Apply Styles and Classes ---
+
+        // 1. Set orientation and direction classes
         let faiChunClass = `fai-chun ${orientation}`;
         if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
         faiChunContainer.className = faiChunClass;
-        
-        faiChunContainer.classList.remove('fai-chun-transparent');
+
+        // 2. Set background color or transparency
         if (isTransparentMode) {
             faiChunContainer.classList.add('fai-chun-transparent');
+            faiChunContainer.style.backgroundColor = '';
         } else {
+            faiChunContainer.classList.remove('fai-chun-transparent');
             faiChunContainer.style.backgroundColor = selectedBackgroundColor;
         }
-        faiChunContainer.onclick = showSaveModal;
-        
-        const imageContainer = document.createElement('div');
-        imageContainer.className = 'fai-chun-text';
-        imageContainer.classList.add(`char-count-${textInput.length}`);
-        imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
 
+        // 3. Set padding and character count class
+        imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
+        imageContainer.className = `fai-chun-text char-count-${textInput.length}`;
+
+        // 4. Set character spacing (gap)
         let finalGapValue = "0";
-        if (orientation === 'vertical') {
-            switch (characterSpacing) {
-                case 'quarter': finalGapValue = '0.7vh'; break;
-                case 'third':   finalGapValue = '1vh'; break;
-                case 'half':    finalGapValue = '1.5vh'; break;
-                case 'full':    finalGapValue = '3vh'; break;
+        if (orientation === 'horizontal') {
+            imageContainer.style.justifyContent = 'center';
+             switch (characterSpacing) {
+                case 'none':    finalGapValue = '1rem'; break; // A reasonable default gap
+                case 'quarter': finalGapValue = '1.5vw'; break;
+                case 'third':   finalGapValue = '2vw'; break;
+                case 'half':    finalGapValue = '3vw'; break;
+                case 'full':    finalGapValue = '5vw'; break;
             }
-        } else {
+        } else { // Vertical
+            imageContainer.style.justifyContent = 'center';
             switch (characterSpacing) {
-                case 'quarter': finalGapValue = '0.5vw'; break;
-                case 'third':   finalGapValue = '0.7vw'; break;
-                case 'half':    finalGapValue = '1vw'; break;
-                case 'full':    finalGapValue = '2vw'; break;
+                case 'none':    finalGapValue = '1rem'; break;
+                case 'quarter': finalGapValue = '1.5vh'; break;
+                case 'third':   finalGapValue = '2vh'; break;
+                case 'half':    finalGapValue = '3vh'; break;
+                case 'full':    finalGapValue = '5vh'; break;
             }
         }
         imageContainer.style.gap = finalGapValue;
-
+        
+        // --- Build and Append Characters ---
         const characters = textInput.split('');
         for (const char of characters) {
             try {
                 const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
                 const img = document.createElement('img');
                 img.src = coloredImageDataUrl;
-                
-                // --- THIS IS THE KEY CHANGE ---
-                // Re-introduce the wrapper div as the flex item
                 const wrapperDiv = document.createElement('div');
                 wrapperDiv.className = 'char-wrapper';
                 wrapperDiv.appendChild(img);
-                
-                // Append the wrapper, not the image directly
                 imageContainer.appendChild(wrapperDiv);
-                // --- END OF CHANGE ---
-
             } catch (error) {
                 console.error("Failed to create colored character:", error);
             }
         }
-
-        faiChunContainer.appendChild(imageContainer);
-        posterContainer.appendChild(faiChunContainer);
+        setTimeout(() => smoothScrollTo(posterContainer), 50);
       }
       
-                // --- REPLACE YOUR SIZINGSTYLES CONSTANT WITH THIS ---
       const sizingStyles = `
-        /* The sizing rules now apply to the .char-wrapper, which is the flex item */
-        .char-wrapper { width: 90%; height: calc(95% / 7); }
-        .fai-chun.horizontal .char-wrapper { width: calc(95% / 7); height: 90%; }
-        
-        /* The char-count classes on the parent now correctly size the child .char-wrapper divs */
-        .char-count-1 .char-wrapper { height: 65%; }
-        .fai-chun.horizontal .char-count-1 .char-wrapper { width: 50%; }
-        .char-count-2 .char-wrapper { height: calc(80% / 2); }
-        .fai-chun.horizontal .char-count-2 .char-wrapper { width: calc(80% / 2); }
-        .char-count-3 .char-wrapper { height: calc(90% / 3); }
-        .fai-chun.horizontal .char-count-3 .char-wrapper { width: calc(90% / 3); }
-        .char-count-4 .char-wrapper { height: calc(95% / 4); }
-        .fai-chun.horizontal .char-count-4 .char-wrapper { width: calc(95% / 4); }
-        .char-count-5 .char-wrapper { height: calc(95% / 5); }
-        .fai-chun.horizontal .char-count-5 .char-wrapper { width: calc(95% / 5); }
-        .char-count-6 .char-wrapper { height: calc(95% / 6); }
-        .fai-chun.horizontal .char-count-6 .char-wrapper { width: calc(95% / 6); }
+        /* --- Vertical Sizing (Percentage-Based) --- */
+        /* This rule sets the width for all vertical characters */
+        .fai-chun.vertical .char-wrapper {
+          width: 90%;
+        }
+        /* These rules dynamically set the height based on character count */
+        .fai-chun.vertical .char-count-1 .char-wrapper { height: 30%; }
+        .fai-chun.vertical .char-count-2 .char-wrapper { height: calc(60% / 2); }
+        .fai-chun.vertical .char-count-3 .char-wrapper { height: calc(65% / 3); }
+        .fai-chun.vertical .char-count-4 .char-wrapper { height: calc(65% / 4); }
+        .fai-chun.vertical .char-count-5 .char-wrapper { height: calc(65% / 5); }
+        .fai-chun.vertical .char-count-6 .char-wrapper { height: calc(65% / 6); }
+        .fai-chun.vertical .char-count-7 .char-wrapper { height: calc(65% / 7); }
+
+        /* --- Horizontal Sizing (Fixed 'rem' Size with Shrinking) --- */
+        .fai-chun.horizontal .char-wrapper {
+          /* Set a large, fixed base size (using 8rem is a good balance) */
+          width: 10rem;
+          height: 10rem;
+          /* Allow the item to shrink if space is needed, but not grow */
+          flex-shrink: 1;
+          flex-grow: 0;
+        }
       `;
       const styleSheet = document.createElement("style");
       styleSheet.innerText = sizingStyles;
