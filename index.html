@@ -618,23 +618,14 @@
 
 
       #fullscreenActions {
-        position: absolute; /* Take the modal out of the layout flow */
-        top: 50%;
-        left: 50%;
+        flex-shrink: 0; /* Prevent the actions container from shrinking */
+        padding-top: 2vh; /* Give it some space from the content above */
         display: flex;
         gap: 1rem;
-        width: 90%; /* Make it wider */
-        max-width: 400px; /* But not too wide on large screens */
-        padding: 1.5rem; /* Increase padding for more height */
-        background-color: rgba(40, 40, 40, 0.85); /* Darker, more solid background */
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
         opacity: 0;
         pointer-events: none;
-        /* Start centered, but scaled down for animation */
-        transform: translate(-50%, -50%) scale(0.9);
+        transform: translateY(20px);
         transition: opacity 0.3s ease, transform 0.3s ease;
-        cursor: default;
       }
 
       #fullscreenActions.visible {
