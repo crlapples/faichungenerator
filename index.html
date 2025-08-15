@@ -635,6 +635,9 @@
           margin-left: 1rem;
           margin-right: 1rem;
         }
+        #inputSection.visible {
+            max-height: unset;
+        }
         .title {
           font-size: 1.5rem;
         }
@@ -713,6 +716,9 @@
             top: -10px;
             right: -10px;
             font-size: 0.9rem;
+        }
+        #inputSection.visible {
+            max-height: unset;
         }
         .fai-chun.vertical {
           width: 9rem;
@@ -833,7 +839,7 @@
             <p class="tooltip">Background Color</p>
             <div id="backgroundChoices">
                 <!-- Default White Option -->
-                <div class="background-choice" data-color="#FFFFFF" style="background-color: #FFFFFF;">
+                <div id="defaultBgChoice" class="background-choice" data-color="#FFFFFF" style="background-color: #FFFFFF;">
                     <div class="checkmark">✓</div>
                 </div>
                 <div class="background-choice" data-choice="transparent">
@@ -856,7 +862,7 @@
             <p class="tooltip">Text Color</p>
             <div id="textColorChoices">
                 <!-- Default Black Option -->
-                <div class="text-choice" data-color="#000000" style="background-color: #000000;">
+                <div id="defaultTextChoice" class="text-choice" data-color="#000000" style="background-color: #000000;">
                     <div class="checkmark">✓</div>
                 </div>
                 <!-- The User Color Picker for Text -->
@@ -1073,7 +1079,7 @@
           }
       }
 
-            document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener('DOMContentLoaded', () => {
           // --- Get all UI elements ---
           const textColorSelector = document.getElementById('textColorSelector');
           const inputSection = document.getElementById('inputSection');
@@ -1350,6 +1356,9 @@
                   fullscreenPreview.classList.remove('visible');
               }
           });
+
+          document.getElementById('defaultBgChoice').click();
+          document.getElementById('defaultTextChoice').click();
       });
       
       const sizingStyles = `
