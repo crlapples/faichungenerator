@@ -1219,15 +1219,6 @@
                 generateFaiChun();
             });
 
-          textConfirmBtn.addEventListener('click', () => {
-              deselectAll(textChoicesContainer);
-              textColorPickerLabel.classList.add('selected');
-              selectedTextColor = textColorPickerInput.value;
-              isTextColorSelected = true;
-              checkUiState();
-              generateFaiChun();
-              setTimeout(() => smoothScrollTo(inputSection), 200);
-          });
           
           // --- SLIDER LISTENERS ---
           paddingTopSlider.addEventListener('input', (event) => {
