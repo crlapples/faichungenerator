@@ -839,13 +839,16 @@
                     <input type="radio" name="spacing" value="0" checked> Normal
                 </label>
                 <label>
-                    <input type="radio" name="spacing" value="0.25em"> ¼ Char
+                    <input type="radio" name="spacing" value="0.5rem"> ¼ Char
                 </label>
                 <label>
-                    <input type="radio" name="spacing" value="0.5em"> ½ Char
+                    <input type="radio" name="spacing" value="0.7rem"> ⅓ Char
                 </label>
                 <label>
-                    <input type="radio" name="spacing" value="1em"> 1 Char
+                    <input type="radio" name="spacing" value="1rem"> ½ Char
+                </label>
+                <label>
+                    <input type="radio" name="spacing" value="2rem"> 1 Char
                 </label>
             </div>
         </div>
@@ -1092,7 +1095,7 @@
       
       // We also still need the sizing styles injected by JavaScript
       const sizingStyles = `
-        .char-wrapper { flex-shrink: 0; width: 90%; height: calc(95% / 7); }
+        .char-wrapper { width: 90%; height: calc(95% / 7); }
         .fai-chun.horizontal .char-wrapper { width: calc(95% / 7); height: 90%; }
         .char-count-1 .char-wrapper { height: 65%; }
         .fai-chun.horizontal .char-count-1 .char-wrapper { width: 50%; }
