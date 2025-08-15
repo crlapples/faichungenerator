@@ -995,7 +995,7 @@
         >
         <button
           id="createBtn"
-          onclick="generateFaiChun(); fullscreenPopup(); scrollCreate();"
+          onclick="handleCreateClick()"
           class="generate-button"
         >
           Create
@@ -1398,6 +1398,9 @@
         
         // --- Build and Append Characters ---
         const characters = textInput.split('');
+
+        const imageLoadPromises = [];
+          
         for (const char of characters) {
             try {
                 const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
@@ -1405,6 +1408,25 @@
                 img.src = coloredImageDataUrl;
                 const wrapperDiv = document.createElement('div');
                 wrapperDiv.className = 'char-wrapper';
+
+                if (orientation === 'vertical' && characters.length > 0) {
+                    // Calculate the available height after padding is removed.
+                    const availableHeight = 100 - paddingTop - paddingBottom;
+                    // Divide that height evenly among all characters.
+                    const charHeight = availableHeight / characters.length;
+                    // Apply this as an inline style to override CSS.
+                    wrapperDiv.style.height = charHeight + '%';
+                    // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
+                    wrapperDiv.style.flexShrink = '0';
+                } else {
+                    // For horizontal, allow the item to shrink if needed.
+                    wrapperDiv.style.minWidth = '0';
+                }
+
+                const loadPromise = new Promise(resolve => {
+                    img.onload = resolve;
+                });
+                imageLoadPromises.push(loadPromise)
                 // --- FIX STARTS HERE ---
                 // This logic overrides your static CSS to handle dynamic padding and fix save issues.
                 if (orientation === 'vertical' && characters.length > 0) {
@@ -1428,8 +1450,20 @@
             } catch (error) {
                 console.error("Failed to create colored character:", error);
             }
+            return Promise.all(imageLoadPromises);
         }
       }
+
+      async function handleCreateClick() {
+          // 1. Generate the Fai Chun and wait for all images to be fully loaded.
+          await generateFaiChun();
+        
+          // 2. Once generation is complete, show the fullscreen popup.
+          fullscreenPopup();
+        
+          // 3. Finally, scroll the main page to the poster container.
+          scrollCreate();
+        }
 
       function scrollCreate() {
         const posterContainer = document.getElementById('posterContainer');
@@ -1437,22 +1471,19 @@
       }
 
       function fullscreenPopup() {
-          setTimeout(() => {
-              const posterContainer = document.getElementById('posterContainer');
-              const posterElement = posterContainer.querySelector('.fai-chun');
-
-              if (posterElement && fullscreenPreview && fullscreenContent) {
-                  fullscreenContent.innerHTML = ''; // Clear old content
-                  const clone = posterElement.cloneNode(true);
-                  clone.onclick = null; // Disable save modal on the clone
-                  fullscreenContent.appendChild(clone);
-                  fullscreenPreview.classList.add('visible');
-                  // IMPORTANT: Ensure action buttons are hidden initially
-                  fullscreenActions.classList.remove('visible');
-                  history.pushState({preview: 'open'}, 'Preview');
-              }
-          }, 500); // 50ms delay is enough for the DOM to update
-      }
+            const posterContainer = document.getElementById('posterContainer');
+            const posterElement = posterContainer.querySelector('.fai-chun');
+        
+            if (posterElement && fullscreenPreview && fullscreenContent) {
+                fullscreenContent.innerHTML = ''; // Clear old content
+                const clone = posterElement.cloneNode(true);
+                clone.onclick = null; // Disable save modal on the clone
+                fullscreenContent.appendChild(clone);
+                fullscreenPreview.classList.add('visible');
+                fullscreenActions.classList.remove('visible');
+                history.pushState({preview: 'open'}, 'Preview');
+            }
+        }
       
       const sizingStyles = `
         /* --- Vertical Sizing (Percentage-Based) --- */
