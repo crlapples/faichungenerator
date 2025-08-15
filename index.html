@@ -1087,77 +1087,135 @@
       }
 
       /**
-         * Saves the generated Fai Chun poster as a PNG image using html2canvas.
-         * FINAL ROBUST VERSION: This version renders a prepared, off-screen clone
-         * of the original poster to guarantee a clean and accurate render, avoiding
-         * all issues with timing, visibility, and CSS conflicts.
-         */
-        async function savePoster() {
-            // 1. Target the original, stable poster element in the main document.
-            const originalPoster = document.querySelector('#posterContainer .fai-chun');
-            
-            if (!originalPoster) {
-                console.error("Save failed: Original poster element not found.");
-                hideSaveModal();
-                return;
-            }
-        
-            // 2. Create a deep clone of the element to work with.
-            const clone = originalPoster.cloneNode(true);
-        
-            // 3. Prepare the clone for off-screen rendering.
-            // This makes it fully measurable by the browser without being visible.
-            clone.style.position = 'absolute';
-            clone.style.left = '-9999px'; // Position it far off-screen.
-            clone.style.top = '0px';
-            
-            // Ensure the clone's container has the same explicit dimensions as the original.
-            const originalRect = originalPoster.getBoundingClientRect();
-            clone.style.width = `${originalRect.width}px`;
-            clone.style.height = `${originalRect.height}px`;
-        
-            // 4. Append the clone to the body so it becomes part of the document layout.
-            document.body.appendChild(clone);
-        
-            // 5. Force absolute pixel dimensions on the clone's children.
-            // We measure the children of the ORIGINAL element to get the correct dimensions.
-            const originalCharWrappers = originalPoster.querySelectorAll('.char-wrapper');
-            const cloneCharWrappers = clone.querySelectorAll('.char-wrapper');
-        
-            originalCharWrappers.forEach((originalWrapper, index) => {
-                const cloneWrapper = cloneCharWrappers[index];
-                if (cloneWrapper) {
-                    const rect = originalWrapper.getBoundingClientRect();
-                    cloneWrapper.style.height = `${rect.height}px`;
-                    cloneWrapper.style.flexBasis = `${rect.height}px`;
-                    cloneWrapper.style.width = `${rect.width}px`; // Also lock in the width.
-                }
-            });
-        
-            try {
-                // 6. Render the prepared, off-screen clone.
-                const canvas = await html2canvas(clone, {
-                    backgroundColor: null,
-                    scale: 3
-                });
-                
-                // 7. Trigger the download.
-                const link = document.createElement('a');
-                link.download = 'fai-chun.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-        
-            } catch (error) {
-                console.error("Error during html2canvas rendering:", error);
-            } finally {
-                // 8. CRITICAL: Clean up by removing the clone from the DOM.
-                document.body.removeChild(clone);
-                
-                // Hide any modals that might be open.
-                hideSaveModal();
-                hidePreview();
-            }
+ * Saves the generated Fai Chun by building a pristine, off-screen element
+ * from the current state and rendering it with html2canvas. This is the most
+ * reliable method, avoiding any issues from cloning a live on-screen element.
+ */
+async function savePoster() {
+    // 1. Get all current state variables needed to build the poster.
+    const textInput = document.getElementById('chineseText').value.trim();
+    const orientation = document.querySelector('input[name="orientation"]:checked').value;
+    const direction = document.querySelector('input[name="direction"]:checked').value;
+
+    // Guard clause: If there's no text, there's nothing to save.
+    if (!textInput) {
+        console.error("Save failed: No text to generate.");
+        hideSaveModal();
+        return;
+    }
+
+    // 2. Create the elements for the off-screen poster from scratch.
+    const saveContainer = document.createElement('div');
+    const imageContainer = document.createElement('div');
+    
+    // 3. Apply classes and styles based on the current state.
+    let faiChunClass = `fai-chun ${orientation}`;
+    if (orientation === 'horizontal') {
+        faiChunClass += ` ${direction}`;
+    }
+    saveContainer.className = faiChunClass;
+
+    // Apply background color or transparency
+    if (isTransparentMode) {
+        saveContainer.classList.add('fai-chun-transparent');
+    } else {
+        saveContainer.style.backgroundColor = selectedBackgroundColor;
+    }
+
+    // Apply padding and character count class to the inner container
+    imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
+    imageContainer.className = `fai-chun-text char-count-${textInput.length}`;
+
+    // Calculate and apply character spacing (gap)
+    let finalGapValue = "0";
+    if (orientation === 'horizontal') {
+        imageContainer.style.justifyContent = 'center';
+        imageContainer.style.alignItems = 'center';
+        switch (characterSpacing) {
+            case 'none':    finalGapValue = '1rem'; break;
+            case 'quarter': finalGapValue = '1.5vw'; break;
+            case 'third':   finalGapValue = '2vw'; break;
+            case 'half':    finalGapValue = '3vw'; break;
+            case 'full':    finalGapValue = '5vw'; break;
         }
+    } else { // Vertical
+        imageContainer.style.justifyContent = 'center';
+        switch (characterSpacing) {
+            case 'none':    finalGapValue = '1rem'; break;
+            case 'quarter': finalGapValue = '1.5vh'; break;
+            case 'third':   finalGapValue = '2vh'; break;
+            case 'half':    finalGapValue = '3vh'; break;
+            case 'full':    finalGapValue = '5vh'; break;
+        }
+    }
+    imageContainer.style.gap = finalGapValue;
+
+    saveContainer.appendChild(imageContainer);
+
+    // 4. Generate and append character images.
+    const characters = textInput.split('');
+    const imageLoadPromises = [];
+
+    for (const char of characters) {
+        try {
+            // This reuses the existing function to create the colored character image
+            const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
+            const img = document.createElement('img');
+            img.src = coloredImageDataUrl;
+            const wrapperDiv = document.createElement('div');
+            wrapperDiv.className = 'char-wrapper';
+            
+            // Create a promise that resolves when this specific image loads
+            const loadPromise = new Promise(resolve => {
+                img.onload = resolve;
+                img.onerror = resolve; // Resolve on error too so it doesn't hang
+            });
+            imageLoadPromises.push(loadPromise);
+
+            wrapperDiv.appendChild(img);
+            imageContainer.appendChild(wrapperDiv);
+        } catch (error) {
+            console.error("Failed to create a character for saving:", error);
+        }
+    }
+
+    // 5. Prepare the pristine element for invisible, on-screen rendering.
+    saveContainer.style.position = 'fixed';
+    saveContainer.style.top = '0';
+    saveContainer.style.left = '0';
+    saveContainer.style.zIndex = '-1'; // Render behind everything
+    saveContainer.style.opacity = '0'; // Make it invisible
+
+    // 6. Append to the body, wait for all images to load, then render.
+    document.body.appendChild(saveContainer);
+
+    try {
+        // Wait for every single generated character image to be fully loaded.
+        await Promise.all(imageLoadPromises);
+
+        // Now it's 100% safe to render the container with html2canvas.
+        const canvas = await html2canvas(saveContainer, {
+            backgroundColor: null, // Use null for transparency support
+            scale: 3 // Render at 3x resolution for high quality
+        });
+        
+        // Trigger the download.
+        const link = document.createElement('a');
+        link.download = 'fai-chun.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+
+    } catch (error) {
+        console.error("Error during html2canvas rendering:", error);
+    } finally {
+        // 7. CRITICAL: Always clean up by removing the temporary element.
+        document.body.removeChild(saveContainer);
+        
+        // Hide any modals that might be open.
+        hideSaveModal();
+        hidePreview();
+    }
+}
 
       document.addEventListener('DOMContentLoaded', () => {
           fetch('character_map.json')
