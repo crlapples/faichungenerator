@@ -1087,7 +1087,23 @@
           });
 
           bgColorPickerInput.addEventListener('input', (event) => {
+              // Update the label's color preview
               bgColorPickerLabel.style.backgroundColor = event.target.value;
+              
+              // --- ADDED LOGIC ---
+              // Deselect any other background choice and select this picker
+              deselectAll(bgChoicesContainer);
+              bgColorPickerLabel.classList.add('selected');
+              
+              // Update the application state
+              isTransparentMode = false;
+              isBgColorSelected = true;
+              selectedBackgroundColor = event.target.value;
+              
+              // Check if the UI needs to reveal the next section
+              checkUiState();
+              // Regenerate the poster with the new color
+              generateFaiChun();
           });
 
           bgConfirmBtn.addEventListener('click', () => {
@@ -1115,7 +1131,22 @@
           });
           
           textColorPickerInput.addEventListener('input', (event) => {
+              // Update the label's color preview
               textColorPickerLabel.style.backgroundColor = event.target.value;
+
+              // --- ADDED LOGIC ---
+              // Deselect any other text color choice and select this picker
+              deselectAll(textChoicesContainer);
+              textColorPickerLabel.classList.add('selected');
+
+              // Update the application state
+              selectedTextColor = event.target.value;
+              isTextColorSelected = true;
+
+              // Check if the UI needs to reveal the next section
+              checkUiState();
+              // Regenerate the poster with the new color
+              generateFaiChun();
           });
 
           textConfirmBtn.addEventListener('click', () => {
