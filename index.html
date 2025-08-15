@@ -1399,15 +1399,10 @@
                     // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
                     wrapperDiv.style.flexShrink = '0';
                 } else {
-                    // FIX for Horizontal Overflow and Stretching:
-                    // Set a base size of 0, allowing it to shrink from its calculated size.
-                    wrapperDiv.style.flexBasis = '0';
-                    // CRITICAL: Allow the item to shrink if the container runs out of space.
-                    wrapperDiv.style.flexShrink = '1';
-                    // Set height relative to the container to prevent stretching on save.
-                    wrapperDiv.style.height = '95%';
-                    // Enforce a square shape.
-                    wrapperDiv.style.aspectRatio = '1 / 1';
+                    // FIX for Horizontal Overflow:
+                    // Set a minimum width of 0, which allows the item to shrink
+                    // below its fixed 10rem size when padding is added.
+                    wrapperDiv.style.minWidth = '0';
                 }
                 wrapperDiv.appendChild(img);
                 imageContainer.appendChild(wrapperDiv);
