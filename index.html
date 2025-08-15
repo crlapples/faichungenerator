@@ -566,20 +566,22 @@
         overflow: hidden;
       }
 
-            /* --- NEW: Styles for Fullscreen Preview (REVISED) --- */
+            /* --- REVISED: Styles for Fullscreen Preview --- */
       #fullscreenPreview {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background-color: rgba(0, 0, 0, 0.85);
+        background-color: rgba(0, 0, 0, 0.9); /* Made it slightly darker */
         z-index: 2000;
-        display: none;
+        display: none; /* Hidden by default */
+        flex-direction: column; /* Stack content and actions vertically */
         align-items: center;
         justify-content: center;
-        padding: 1rem;
+        padding: 0.5rem; /* Use minimal padding on the overlay itself */
         box-sizing: border-box;
+        cursor: pointer; /* Indicate the background is clickable */
       }
 
       #fullscreenPreview.visible {
@@ -587,44 +589,58 @@
       }
 
       #fullscreenContent {
-        max-width: 95vw;
-        max-height: 95vh;
+        width: 100%;
+        height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
       }
       
-      /* --- This is the key fix for scaling --- */
-      /* Make the cloned element responsive */
+      /* FIX: Make the cloned poster truly fill the available space */
       #fullscreenContent .fai-chun {
         width: auto;
         height: auto;
         max-width: 100%;
         max-height: 100%;
       }
-      /* Preserve aspect ratio for vertical clones */
       #fullscreenContent .fai-chun.vertical {
-        height: 95vh; /* Let height be the limiting factor */
-        aspect-ratio: 16 / 36; /* Original dimensions: 16rem / 36rem */
+        height: 100%; /* Fill the vertical space */
+        aspect-ratio: 16 / 36;
       }
-      /* Preserve aspect ratio for horizontal clones */
       #fullscreenContent .fai-chun.horizontal {
-        width: 95vw; /* Let width be the limiting factor */
-        aspect-ratio: 36 / 10; /* Original dimensions: 36rem / 10rem */
+        width: 100%; /* Fill the horizontal space */
+        aspect-ratio: 36 / 10;
       }
 
-      #closeFullscreen {
+      /* FIX: Force horizontal centering for characters in vertical preview */
+      #fullscreenContent .fai-chun.vertical .char-wrapper {
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      /* NEW: Styles for the action buttons container */
+      #fullscreenActions {
         position: absolute;
-        top: 15px;
-        right: 25px;
-        color: white;
-        font-size: 3rem;
-        font-weight: bold;
-        cursor: pointer;
-        line-height: 1;
+        bottom: 3vh; /* Position it near the bottom of the screen */
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        opacity: 0; /* Hidden by default */
+        pointer-events: none; /* Not clickable when hidden */
+        transform: translateY(20px); /* Start slightly lower for animation */
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        cursor: default; /* Clicks on the actions box shouldn't close the preview */
       }
 
-
+      /* This class will be toggled to show the actions */
+      #fullscreenActions.visible {
+        opacity: 1;
+        pointer-events: auto;
+        transform: translateY(0);
+      }
+      
       /* --- NEW ---: Responsive styles for mobile and tablet */
       @media (max-width: 768px) {
         .generator-container {
@@ -993,6 +1009,8 @@
       let characterSpacing = "none";
       let characterMap = {};
 
+      let fullscreenPreview, fullscreenContent, fullscreenActions;
+
       /**
        * Creates a colored version of a character image.
        * @param {string} char The character to color.
@@ -1110,10 +1128,14 @@
           const paddingRightValue = document.getElementById('paddingRightValue');
           const paddingBottomValue = document.getElementById('paddingBottomValue');
           const paddingLeftValue = document.getElementById('paddingLeftValue');
+          
+          const savePreviewBtn = document.getElementById('savePreviewBtn');
+          const closePreviewBtn = document.getElementById('closePreviewBtn');
 
-          const fullscreenPreview = document.getElementById('fullscreenPreview');
-          const fullscreenContent = document.getElementById('fullscreenContent');
-          const closeFullscreen = document.getElementById('closeFullscreen');
+          // Assign the global variables
+          fullscreenPreview = document.getElementById('fullscreenPreview');
+          fullscreenContent = document.getElementById('fullscreenContent');
+          fullscreenActions = document.getElementById('fullscreenActions');
 
           function deselectAll(container) {
               container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
@@ -1273,6 +1295,27 @@
                   fullscreenPreview.classList.remove('visible');
               }
           });
+
+          function hidePreview() {
+              fullscreenPreview.classList.remove('visible');
+              fullscreenActions.classList.remove('visible'); // Also hide actions
+          }
+
+          // Clicking the dark background shows/hides the action buttons
+          fullscreenPreview.addEventListener('click', (event) => {
+              if (event.target === fullscreenPreview || event.target === fullscreenContent) {
+                  fullscreenActions.classList.toggle('visible');
+              }
+          });
+
+          // The new "Save" button saves the poster and then closes the preview
+          savePreviewBtn.addEventListener('click', () => {
+              savePoster(); // This saves the original poster from the main page
+              hidePreview();
+          });
+
+          // The new "Close" button just closes the preview
+          closePreviewBtn.addEventListener('click', hidePreview);
       });
 
             // --- Replace your entire old function with this new, corrected version ---
@@ -1435,11 +1478,15 @@
             </div>
         </div>
     </div>
-        <!-- ADD THIS ENTIRE BLOCK FOR THE FULLSCREEN PREVIEW -->
+        <!-- REVISED Fullscreen Preview HTML -->
     <div id="fullscreenPreview">
-        <span id="closeFullscreen">&times;</span>
         <div id="fullscreenContent">
-            <!-- The cloned Fai Chun will be placed here by JavaScript -->
+            <!-- The cloned Fai Chun will be placed here -->
+        </div>
+        <!-- New container for the action buttons -->
+        <div id="fullscreenActions">
+            <button id="savePreviewBtn" class="modal-button primary">Save Poster</button>
+            <button id="closePreviewBtn" class="modal-button">Close Preview</button>
         </div>
     </div>
 </body>
