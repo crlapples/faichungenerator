@@ -1087,66 +1087,95 @@
       }
 
       /**
-       * Saves the generated Fai Chun poster as a PNG image using html2canvas.
-       */
-      /**
          * Saves the generated Fai Chun poster as a PNG image using html2canvas.
-         * This version includes a fix for squished characters in the output file.
+         * FINAL, ROBUST VERSION: This version guarantees the target element is measurable
+         * before rendering to prevent empty/zero-size image files.
          */
         async function savePoster() {
-            // Prioritize the fullscreen preview element, fall back to the main one
-            const posterElement = document.querySelector('#fullscreenContent .fai-chun') || document.querySelector('#posterContainer .fai-chun');
+            // 1. ALWAYS target the original poster in the main document for stability.
+            const posterElement = document.querySelector('#posterContainer .fai-chun');
             
             if (!posterElement) {
+                console.error("Save failed: Original poster element not found.");
                 hideSaveModal();
                 return;
             }
         
-            // --- START: SQUISHED IMAGE FIX ---
+            // --- PREPARATION FOR RENDERING ---
+            // Store original styles to restore them later.
+            const originalPosterStyle = posterElement.style.cssText;
             const charWrappers = posterElement.querySelectorAll('.char-wrapper');
-            const originalStyles = []; // To store original styles so we can restore them
+            const originalWrapperStyles = [];
         
-            // 1. Temporarily set explicit pixel dimensions that html2canvas can understand
+            // 2. Force the poster to be in a measurable state.
+            // This prevents getBoundingClientRect() from returning zero if the element is off-screen.
+            // We hide it from the user with z-index and opacity.
+            posterElement.style.position = 'fixed';
+            posterElement.style.top = '0';
+            posterElement.style.left = '0';
+            posterElement.style.zIndex = '-1'; 
+            posterElement.style.opacity = '0.01';
+        
+            // 3. Override relative styles with absolute pixel dimensions.
+            let hasValidDimensions = true;
             charWrappers.forEach(wrapper => {
-                // Store the original inline style properties to restore later
-                originalStyles.push({
+                originalWrapperStyles.push({
                     height: wrapper.style.height,
                     flexBasis: wrapper.style.flexBasis
                 });
                 
-                // Get the final, browser-rendered dimensions of the element
                 const rect = wrapper.getBoundingClientRect();
                 
-                // Force the height to an absolute pixel value
+                // CRITICAL CHECK: If height is 0, the canvas will be empty.
+                if (rect.height === 0) {
+                    hasValidDimensions = false;
+                    console.error("Save failed: Character wrapper has a calculated height of 0. The poster might be hidden.", wrapper);
+                }
+                
                 wrapper.style.height = `${rect.height}px`;
-                // Also set flexBasis to this value to avoid any conflicts
                 wrapper.style.flexBasis = `${rect.height}px`;
             });
-            // --- END: SQUISHED IMAGE FIX ---
+        
+            // If any wrapper had zero height, abort the save to prevent an empty file.
+            if (!hasValidDimensions) {
+                // Restore original styles before aborting
+                posterElement.style.cssText = originalPosterStyle;
+                charWrappers.forEach((wrapper, index) => {
+                    wrapper.style.height = originalWrapperStyles[index].height;
+                    wrapper.style.flexBasis = originalWrapperStyles[index].flexBasis;
+                });
+                alert("Could not save the poster. Please try generating it again.");
+                hideSaveModal();
+                hidePreview();
+                return;
+            }
         
             try {
-                // 2. Now, run html2canvas with the locked-in pixel dimensions
+                // 4. Run html2canvas on the prepared, measurable element.
                 const canvas = await html2canvas(posterElement, {
-                    backgroundColor: null, // Use null for transparency
-                    scale: 3 // Render at 3x resolution for high quality
+                    backgroundColor: null,
+                    scale: 3
                 });
                 
-                // 3. Trigger the download
+                // 5. Trigger the download.
                 const link = document.createElement('a');
                 link.download = 'fai-chun.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
         
             } catch (error) {
-                console.error("Failed to save poster:", error);
+                console.error("Error during html2canvas rendering:", error);
             } finally {
-                // 4. IMPORTANT: Restore the original styles to the element
+                // 6. IMPORTANT: Restore ALL original styles to clean up the DOM.
+                posterElement.style.cssText = originalPosterStyle;
                 charWrappers.forEach((wrapper, index) => {
-                    wrapper.style.height = originalStyles[index].height;
-                    wrapper.style.flexBasis = originalStyles[index].flexBasis;
+                    wrapper.style.height = originalWrapperStyles[index].height;
+                    wrapper.style.flexBasis = originalWrapperStyles[index].flexBasis;
                 });
                 
-                hideSaveModal(); // Hide the confirmation modal
+                // Hide any modals that might be open.
+                hideSaveModal();
+                hidePreview();
             }
         }
 
