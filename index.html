@@ -1086,36 +1086,7 @@
           }
       }
 
-      /**
- * A recursive helper function that copies all computed CSS styles from a source element
- * to a target element. This is crucial for creating a perfect, self-contained clone
- * for html2canvas.
- * @param {HTMLElement} source - The element to read styles from.
- * @param {HTMLElement} target - The element to apply styles to.
- */
-function applyComputedStyles(source, target) {
-    const computedStyle = window.getComputedStyle(source);
-    for (const property of computedStyle) {
-        target.style.setProperty(property, computedStyle.getPropertyValue(property), computedStyle.getPropertyPriority(property));
-    }
-
-    // Recursively apply styles to all children
-    for (let i = 0; i < source.children.length; i++) {
-        applyComputedStyles(source.children[i], target.children[i]);
-    }
-}
-
-
-/**
- * Saves the generated Fai Chun using the most robust method:
- * 1. Clones the on-screen element.
- * 2. Recursively copies every computed CSS style from the original to the clone,
- *    "baking" the styles in.
- * 3. Waits for all images in the clone to load.
- * 4. Renders the perfect, self-contained clone with html2canvas.
- */
-async function savePoster() {
-    // 1. Target the original, stable poster element on the screen.
+      async function savePoster() {
     const originalPoster = document.querySelector('#posterContainer .fai-chun');
     
     if (!originalPoster) {
@@ -1124,57 +1095,80 @@ async function savePoster() {
         return;
     }
 
-    // 2. Create a deep clone of the element and its entire structure.
+    // Wait for fonts to load
+    await document.fonts.ready;
+
     const clone = originalPoster.cloneNode(true);
 
-    // 3. Apply all computed styles from the original to the clone, recursively.
-    // This is the key step that "bakes" your stylesheet CSS into the clone.
-    applyComputedStyles(originalPoster, clone);
+    // Apply computed styles recursively
+    async function applyComputedStyles(source, target) {
+        const computedStyle = window.getComputedStyle(source);
+        for (const property of computedStyle) {
+            target.style.setProperty(property, computedStyle.getPropertyValue(property), computedStyle.getPropertyPriority(property));
+        }
+        for (let i = 0; i < source.children.length; i++) {
+            await applyComputedStyles(source.children[i], target.children[i]);
+        }
+    }
+    await applyComputedStyles(originalPoster, clone);
 
-    // 4. Prepare the clone for invisible, on-screen rendering.
-    clone.style.position = 'fixed';
-    clone.style.top = '0';
-    clone.style.left = '0';
-    clone.style.zIndex = '-1';
-    clone.style.opacity = '0';
+    // Set explicit dimensions and position
+    clone.style.width = `${originalPoster.offsetWidth}px`;
+    clone.style.height = `${originalPoster.offsetHeight}px`;
+    clone.style.position = 'absolute';
+    clone.style.transform = 'translate(-9999px, -9999px)';
+    clone.style.opacity = '1';
 
-    // 5. Append the clone to the body to start the rendering process.
     document.body.appendChild(clone);
 
     try {
-        // 6. Wait for all images inside the now perfectly-styled clone to fully load.
+        // Handle image loading with CORS
         const images = clone.querySelectorAll('img');
+        images.forEach(img => {
+            img.crossOrigin = 'Anonymous';
+        });
         const imageLoadPromises = Array.from(images).map(img => {
-            return new Promise(resolve => {
-                if (img.complete) {
+            return new Promise((resolve, reject) => {
+                if (img.complete && img.naturalWidth !== 0) {
                     resolve();
                 } else {
                     img.onload = resolve;
-                    img.onerror = resolve; // Don't hang if an image fails
+                    img.onerror = () => {
+                        console.warn(`Image failed to load: ${img.src}`);
+                        resolve();
+                    };
                 }
             });
         });
 
         await Promise.all(imageLoadPromises);
 
-        // 7. Render the perfectly prepared clone.
+        // Render with html2canvas
         const canvas = await html2canvas(clone, {
             backgroundColor: null,
-            scale: 3 // High-resolution rendering
+            scale: 3,
+            logging: true
         });
-        
-        // 8. Trigger the download.
+
+        // Verify canvas
+        if (canvas.width === 0 || canvas.height === 0) {
+            throw new Error('Canvas has invalid dimensions');
+        }
+
+        // Trigger download
+        const dataURL = canvas.toDataURL('image/png');
+        if (!dataURL.startsWith('data:image/png;base64,')) {
+            throw new Error('Invalid data URL generated');
+        }
         const link = document.createElement('a');
         link.download = 'fai-chun.png';
-        link.href = canvas.toDataURL('image/png');
+        link.href = dataURL;
         link.click();
 
     } catch (error) {
         console.error("Error during html2canvas rendering:", error);
     } finally {
-        // 9. CRITICAL: Clean up by removing the clone from the DOM.
         document.body.removeChild(clone);
-        
         hideSaveModal();
         hidePreview();
     }
