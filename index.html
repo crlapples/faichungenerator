@@ -617,6 +617,7 @@
       }
 
 
+      /* Actions are now a regular flex item, NOT positioned absolute */
       #fullscreenActions {
         flex-shrink: 0; /* Prevent the actions container from shrinking */
         padding-top: 2vh; /* Give it some space from the content above */
@@ -926,7 +927,7 @@
                         <label for="paddingTop">Top</label>
                         <span id="paddingTopValue" class="slider-value">5%</span>
                     </div>
-                    <input type="range" id="paddingTop" min="0" max="20" value="5">
+                    <input type="range" id="paddingTop" min="0" max="40" value="5">
                 </div>
                 <!-- Bottom Slider -->
                 <div class="padding-slider">
@@ -934,7 +935,7 @@
                         <label for="paddingBottom">Bottom</label>
                         <span id="paddingBottomValue" class="slider-value">5%</span>
                     </div>
-                    <input type="range" id="paddingBottom" min="0" max="20" value="5">
+                    <input type="range" id="paddingBottom" min="0" max="40" value="5">
                 </div>
                 <!-- Left Slider -->
                 <div class="padding-slider">
@@ -942,7 +943,7 @@
                         <label for="paddingLeft">Left</label>
                         <span id="paddingLeftValue" class="slider-value">5%</span>
                     </div>
-                    <input type="range" id="paddingLeft" min="0" max="20" value="5">
+                    <input type="range" id="paddingLeft" min="0" max="40" value="5">
                 </div>
                 <!-- Right Slider -->
                 <div class="padding-slider">
@@ -950,7 +951,7 @@
                         <label for="paddingRight">Right</label>
                         <span id="paddingRightValue" class="slider-value">5%</span>
                     </div>
-                    <input type="range" id="paddingRight" min="0" max="20" value="5">
+                    <input type="range" id="paddingRight" min="0" max="40" value="5">
                 </div>
             </div>
         </div>
@@ -1399,14 +1400,10 @@
                     // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
                     wrapperDiv.style.flexShrink = '0';
                 } else {
-                    // FIX for Horizontal Overflow and Stretching:
-                    // Set a base size of 0, allowing it to shrink from its calculated size.
-                    wrapperDiv.style.flexBasis = '0';
-                    // CRITICAL: Allow the item to shrink if the container runs out of space.
-                    wrapperDiv.style.flexShrink = '1';
-                    // Set height relative to the container to prevent stretching on save.
+                    // FIX for Horizontal Stretching:
+                    // Override the fixed '10rem' height to be responsive to the container.
                     wrapperDiv.style.height = '95%';
-                    // Enforce a square shape.
+                    // Enforce a square shape to prevent the image from stretching.
                     wrapperDiv.style.aspectRatio = '1 / 1';
                 }
                 wrapperDiv.appendChild(img);
