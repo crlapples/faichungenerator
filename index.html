@@ -1550,6 +1550,7 @@ async function savePoster() {
                 if (orientation === 'vertical' && characters.length > 0) {
                     // FIX for Vertical Overflow & Squishing:
                     wrapperDiv.style.flexBasis = '10%';
+                    wrapperDiv.style.width = '30%';
                     // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
                     wrapperDiv.style.flexShrink = '0';
                 } else {
