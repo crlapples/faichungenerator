@@ -489,6 +489,7 @@
       #textColorSelector.visible-flex {
         max-height: 360px; /* Or a value large enough to fit the content */
         opacity: 1;
+        margin-bottom: 1.5rem;
         pointer-events: auto;
       }
 
@@ -514,6 +515,18 @@
         .fai-chun.horizontal {
           max-width: 28rem;
           height: 8rem;
+        }
+                /* --- NEW Tablet Styles --- */
+        .tooltip {
+          font-size: 0.9rem; /* Make tooltip text slightly smaller */
+        }
+        .background-choice, .text-choice {
+            width: 70px; /* Shrink the color swatches */
+            height: 70px;
+        }
+        .confirm-button {
+          padding: 0.25rem 0.5rem; /* Make the OK button a bit smaller */
+          font-size: 0.75rem;
         }
       }
       @media (max-width: 480px) {
@@ -582,6 +595,41 @@
         }
         .modal-button {
           width: 100%;
+        }
+                /* --- NEW Mobile Styles --- */
+        
+        /* Make the color selection rows more compact */
+        #backgroundChoices, #textColorChoices {
+            gap: 0.75rem;
+        }
+        
+        /* Significantly shrink the color swatches for small screens */
+        .background-choice, .text-choice {
+            width: 50px;
+            height: 50px;
+        }
+
+        /* Make the color picker emoji smaller */
+        #bgColorPickerLabel, #textColorPickerLabel {
+          font-size: 1.5rem;
+        }
+        
+        /* Adjust the checkmark to fit the smaller swatches */
+        .text-choice .checkmark {
+            width: 24px;
+            height: 24px;
+            top: -10px;
+            right: -10px;
+            font-size: 0.9rem;
+        }
+
+        /* Make the "OK" button more compact */
+        .picker-container {
+            gap: 0.3rem;
+        }
+        .confirm-button {
+            padding: 0.2rem 0.4rem;
+            font-size: 0.7rem;
         }
       }
     </style>
@@ -796,8 +844,12 @@
           });
           
           // Event listeners for orientation and direction still trigger regeneration
-          document.querySelector('input[name="orientation"]').addEventListener('change', generateFaiChun);
-          document.querySelector('input[name="direction"]').addEventListener('change', generateFaiChun);
+          // --- AFTER (The Correct Code) ---
+          // Listen for a change on the container for orientation buttons
+          document.getElementById('orientationSelector').addEventListener('change', generateFaiChun);
+
+          // Listen for a change on the container for direction buttons
+          document.getElementById('directionSelector').addEventListener('change', generateFaiChun);
       });
 
       function generateFaiChun() {
