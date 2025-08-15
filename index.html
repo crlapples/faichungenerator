@@ -133,7 +133,7 @@
           width: 100%;
           display: flex; /* Use Flexbox for alignment */
           align-items: center; /* Center items along the cross axis */
-          justify-content: center; /* Distribute space evenly */
+          justify-content: space-evenly; /* Distribute space evenly */
           box-sizing: border-box;
           /* REMOVE all font-related properties like font-family, font-size, color, etc. */
       }
@@ -582,7 +582,7 @@
         }
         .fai-chun.vertical {
           width: 12rem;
-          height: 24rem;
+          height: 32rem;
         }
         .fai-chun.horizontal {
           max-width: 28rem;
@@ -619,7 +619,7 @@
         .generator-container {
           padding-left: 1rem;
           padding-right: 1rem;
-          width: 95%;
+          width: 90%;
           margin-top: 1.2rem;
           margin-bottom: 1.2rem;
           margin-left: 0.5rem;
@@ -652,7 +652,7 @@
         }
         .fai-chun.vertical {
           width: 9rem;
-          height: 20rem;
+          height: 30rem;
           border-width: 6px;
         }
         .fai-chun.horizontal {
@@ -1263,6 +1263,25 @@
                 img.src = coloredImageDataUrl;
                 const wrapperDiv = document.createElement('div');
                 wrapperDiv.className = 'char-wrapper';
+                // --- FIX STARTS HERE ---
+                // This logic overrides your static CSS to handle dynamic padding and fix save issues.
+                if (orientation === 'vertical' && characters.length > 0) {
+                    // FIX for Vertical Overflow & Squishing:
+                    // Calculate the available height after padding is removed.
+                    const availableHeight = 100 - paddingTop - paddingBottom;
+                    // Divide that height evenly among all characters.
+                    const charHeight = availableHeight / characters.length;
+                    // Apply this as an inline style to override the CSS from `sizingStyles`.
+                    wrapperDiv.style.height = charHeight + '%';
+                    // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
+                    wrapperDiv.style.flexShrink = '0';
+                } else {
+                    // FIX for Horizontal Stretching:
+                    // Override the fixed '10rem' height to be responsive to the container.
+                    wrapperDiv.style.height = '95%';
+                    // Enforce a square shape to prevent the image from stretching.
+                    wrapperDiv.style.aspectRatio = '1 / 1';
+                }
                 wrapperDiv.appendChild(img);
                 imageContainer.appendChild(wrapperDiv);
             } catch (error) {
