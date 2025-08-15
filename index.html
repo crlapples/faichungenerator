@@ -132,7 +132,6 @@
           display: flex; /* Use Flexbox for alignment */
           align-items: center; /* Center items along the cross axis */
           justify-content: center; /* Distribute space evenly */
-          padding: 0.5rem;
           box-sizing: border-box;
           /* REMOVE all font-related properties like font-family, font-size, color, etc. */
       }
@@ -498,6 +497,36 @@
         display: block; /* We can't use flex here, the inner divs handle that */
       }
 
+            /* --- NEW: Styles for Padding Sliders --- */
+      #paddingControls {
+        margin-bottom: 3rem;
+      }
+
+      .padding-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr; /* Two columns */
+        gap: 1rem 2rem; /* Row and column gap */
+        max-width: 300px;
+        margin: 0 auto; /* Center the grid */
+      }
+
+      .padding-slider {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.9rem;
+        color: #4b5563;
+      }
+
+      .padding-slider label {
+        margin-bottom: 0.25rem;
+      }
+
+      .padding-slider input[type="range"] {
+        width: 100%;
+        accent-color: #dc2626; /* Match your theme color */
+      }
+
 
       /* --- NEW ---: Responsive styles for mobile and tablet */
       @media (max-width: 768px) {
@@ -527,6 +556,13 @@
         .confirm-button {
           padding: 0.25rem 0.5rem; /* Make the OK button a bit smaller */
           font-size: 0.75rem;
+        }
+                /* --- NEW Tablet Styles for Padding Controls --- */
+        .padding-grid {
+          gap: 0.75rem 1.5rem; /* Slightly tighten the grid spacing */
+        }
+        .padding-slider {
+          font-size: 0.85rem; /* Make the labels a bit smaller */
         }
       }
       @media (max-width: 480px) {
@@ -631,6 +667,18 @@
             padding: 0.2rem 0.4rem;
             font-size: 0.7rem;
         }
+                /* --- NEW Mobile Styles for Padding Controls --- */
+        #paddingControls {
+          margin-bottom: 3rem; /* Reduce bottom margin to save space */
+        }
+        .padding-grid {
+          grid-template-columns: 1fr; /* Switch from two columns to a single column */
+          max-width: 250px;         /* Make the container slightly narrower */
+          gap: 1.25rem;             /* Adjust the gap for the new single-column layout */
+        }
+        .padding-slider label {
+          font-size: 0.9rem; /* Match other mobile font sizes */
+        }
       }
     </style>
 </head>
@@ -720,6 +768,28 @@
             </div>
         </div>
 
+        <div id="paddingControls">
+            <p class="tooltip">Character Margins (%)</p>
+            <div class="padding-grid">
+                <div class="padding-slider">
+                    <label for="paddingTop">Top</label>
+                    <input type="range" id="paddingTop" min="0" max="40" value="5">
+                </div>
+                <div class="padding-slider">
+                    <label for="paddingBottom">Bottom</label>
+                    <input type="range" id="paddingBottom" min="0" max="40" value="5">
+                </div>
+                <div class="padding-slider">
+                    <label for="paddingLeft">Left</label>
+                    <input type="range" id="paddingLeft" min="0" max="40" value="5">
+                </div>
+                <div class="padding-slider">
+                    <label for="paddingRight">Right</label>
+                    <input type="range" id="paddingRight" min="0" max="40" value="5">
+                </div>
+            </div>
+        </div>
+
         <p class="tooltip">Chinese Word(s) or Phrase/Idiom</p>
         <input
           type="text"
@@ -745,6 +815,10 @@
       let selectedTextColor = null;
       let isBgColorSelected = false;
       let isTextColorSelected = false;
+      let paddingTop = 5;
+      let paddingRight = 5;
+      let paddingBottom = 5;
+      let paddingLeft = 5;
       
       let characterMap = {};
 
@@ -769,6 +843,28 @@
           const textColorPickerInput = document.getElementById('textColorPickerInput');
           const textColorPickerLabel = document.getElementById('textColorPickerLabel');
           const textConfirmBtn = document.getElementById('textConfirmBtn');
+
+          const paddingTopSlider = document.getElementById('paddingTop');
+          const paddingRightSlider = document.getElementById('paddingRight');
+          const paddingBottomSlider = document.getElementById('paddingBottom');
+          const paddingLeftSlider = document.getElementById('paddingLeft');
+
+          paddingTopSlider.addEventListener('input', (event) => {
+              paddingTop = event.target.value;
+              generateFaiChun(); // Re-render on change
+          });
+          paddingRightSlider.addEventListener('input', (event) => {
+              paddingRight = event.target.value;
+              generateFaiChun();
+          });
+          paddingBottomSlider.addEventListener('input', (event) => {
+              paddingBottom = event.target.value;
+              generateFaiChun();
+          });
+          paddingLeftSlider.addEventListener('input', (event) => {
+              paddingLeft = event.target.value;
+              generateFaiChun();
+          });
 
           function deselectAll(container) {
               container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
@@ -879,6 +975,8 @@
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
         imageContainer.classList.add(`char-count-${characterCount}`);
+
+        imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
 
         const characters = textInput.split('');
         characters.forEach(char => {
