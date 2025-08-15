@@ -467,7 +467,7 @@
         max-height: 480px; /* Or a value large enough to fit the content */
         opacity: 1;
         pointer-events: auto;
-        margin-bottom: 3.05rem;
+        margin-bottom: 2.75rem;
         overflow: visible;
       }
 
@@ -566,22 +566,21 @@
         overflow: hidden;
       }
 
-            /* --- REVISED: Styles for Fullscreen Preview --- */
+            /* --- FINAL, CORRECTED Styles for Fullscreen Preview --- */
       #fullscreenPreview {
         position: fixed;
         top: 0;
         left: 0;
         width: 100vw;
         height: 100vh;
-        background-color: rgba(0, 0, 0, 0.9); /* Made it slightly darker */
+        background-color: rgba(0, 0, 0, 0.9);
         z-index: 2000;
         display: none; /* Hidden by default */
         flex-direction: column; /* Stack content and actions vertically */
         align-items: center;
-        justify-content: center;
-        padding: 0.5rem; /* Use minimal padding on the overlay itself */
+        justify-content: center; /* Center the whole group */
+        padding: 2vh 1vw; /* Give a little space from the edges */
         box-sizing: border-box;
-        cursor: pointer; /* Indicate the background is clickable */
       }
 
       #fullscreenPreview.visible {
@@ -589,14 +588,15 @@
       }
 
       #fullscreenContent {
+        flex-grow: 1; /* Allow the content to take up all available space */
         width: 100%;
-        height: 100%;
+        min-height: 0; /* A flexbox trick to allow proper shrinking */
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer; /* Make the content area clickable to toggle actions */
       }
       
-      /* FIX: Make the cloned poster truly fill the available space */
       #fullscreenContent .fai-chun {
         width: auto;
         height: auto;
@@ -604,48 +604,42 @@
         max-height: 100%;
       }
       #fullscreenContent .fai-chun.vertical {
-        height: 100%; /* Fill the vertical space */
+        height: 100%;
         aspect-ratio: 16 / 36;
       }
       #fullscreenContent .fai-chun.horizontal {
-        width: 100%; /* Fill the horizontal space */
+        width: 100%;
         aspect-ratio: 36 / 10;
       }
 
-      /* FIX: Force horizontal centering for characters in vertical preview */
       #fullscreenContent .fai-chun.vertical .char-wrapper {
         margin-left: auto;
         margin-right: auto;
       }
 
-      /* NEW: Styles for the action buttons container */
+      /* Actions are now a regular flex item, NOT positioned absolute */
       #fullscreenActions {
-        position: absolute;
-        bottom: 3vh; /* Position it near the bottom of the screen */
+        flex-shrink: 0; /* Prevent the actions container from shrinking */
+        padding-top: 2vh; /* Give it some space from the content above */
         display: flex;
         gap: 1rem;
-        padding: 1rem;
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        opacity: 0; /* Hidden by default */
-        pointer-events: none; /* Not clickable when hidden */
-        transform: translateY(20px); /* Start slightly lower for animation */
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(20px);
         transition: opacity 0.3s ease, transform 0.3s ease;
-        cursor: default; /* Clicks on the actions box shouldn't close the preview */
       }
 
-      /* This class will be toggled to show the actions */
       #fullscreenActions.visible {
         opacity: 1;
         pointer-events: auto;
         transform: translateY(0);
       }
-
-            /* --- ADD THIS NEW RULE TO MAKE THE PREVIEW BUTTONS BIGGER --- */
+      
+      /* Make the buttons larger and easier to click */
       #fullscreenActions .modal-button {
-        width: auto; /* Allow the button to size to its content */
-        padding: 0.8rem 1.8rem; /* Increase padding for a larger click area */
-        font-size: 1.1rem; /* Make the text larger */
+        width: auto;
+        padding: 0.8rem 1.8rem;
+        font-size: 1.1rem;
       }
       
       /* --- NEW ---: Responsive styles for mobile and tablet */
