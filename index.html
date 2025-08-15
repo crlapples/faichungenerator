@@ -455,12 +455,6 @@
         background-color: #e5e7eb;
       }
 
-            /* --- ADD THIS NEW RULE --- */
-      .char-wrapper img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-      }
       .hidden {
         display: none !important;
       }
@@ -1084,7 +1078,7 @@
           });
       });
 
-      // --- CORRECTED GENERATION FUNCTION ---
+            // --- REPLACE YOUR ENTIRE FUNCTION WITH THIS ---
       async function generateFaiChun() {
         if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) {
             return;
@@ -1099,12 +1093,12 @@
           return;
         }
 
-        posterContainer.innerHTML = ''; // Clear previous poster
+        posterContainer.innerHTML = '';
         const faiChunContainer = document.createElement('div');
-        // ... (code to set up faiChunContainer class, background, and onclick is the same)
         let faiChunClass = `fai-chun ${orientation}`;
         if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
         faiChunContainer.className = faiChunClass;
+        
         faiChunContainer.classList.remove('fai-chun-transparent');
         if (isTransparentMode) {
             faiChunContainer.classList.add('fai-chun-transparent');
@@ -1118,41 +1112,38 @@
         imageContainer.classList.add(`char-count-${textInput.length}`);
         imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
 
+        let finalGapValue = "0";
+        if (orientation === 'vertical') {
+            switch (characterSpacing) {
+                case 'quarter': finalGapValue = '0.7vh'; break;
+                case 'third':   finalGapValue = '1vh'; break;
+                case 'half':    finalGapValue = '1.5vh'; break;
+                case 'full':    finalGapValue = '3vh'; break;
+            }
+        } else {
+            switch (characterSpacing) {
+                case 'quarter': finalGapValue = '0.5vw'; break;
+                case 'third':   finalGapValue = '0.7vw'; break;
+                case 'half':    finalGapValue = '1vw'; break;
+                case 'full':    finalGapValue = '2vw'; break;
+            }
+        }
+        imageContainer.style.gap = finalGapValue;
+
         const characters = textInput.split('');
-
-        // We MUST use a for...of loop here to work with await
-        for (const [index, char] of characters.entries()) {
+        for (const char of characters) {
             try {
-                // Await the new colored image from our helper function
                 const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
-
-                // Now create a standard <img> tag, which html2canvas understands perfectly
+                
+                // --- THIS IS THE KEY CHANGE ---
+                // Create the <img> tag directly
                 const img = document.createElement('img');
                 img.src = coloredImageDataUrl;
                 
-                const wrapperDiv = document.createElement('div');
-                wrapperDiv.className = 'char-wrapper';
-                wrapperDiv.appendChild(img);
-                
-                // Apply margin-based spacing logic (remains the same)
-                if (index < characters.length - 1) {
-                    if (orientation === 'vertical') {
-                        switch (characterSpacing) {
-                            case 'quarter': wrapperDiv.style.marginBottom = '0.5rem'; break;
-                            case 'third':   wrapperDiv.style.marginBottom = '0.7rem'; break;
-                            case 'half':    wrapperDiv.style.marginBottom = '1rem'; break;
-                            case 'full':    wrapperDiv.style.marginBottom = '2rem'; break;
-                        }
-                    } else {
-                        switch (characterSpacing) {
-                            case 'quarter': wrapperDiv.style.marginRight = '1.5%'; break;
-                            case 'third':   wrapperDiv.style.marginRight = '2%'; break;
-                            case 'half':    wrapperDiv.style.marginRight = '3%'; break;
-                            case 'full':    wrapperDiv.style.marginRight = '6%'; break;
-                        }
-                    }
-                }
-                imageContainer.appendChild(wrapperDiv);
+                // NO MORE WRAPPER DIV. Append the <img> directly to the container.
+                imageContainer.appendChild(img);
+                // --- END OF CHANGE ---
+
             } catch (error) {
                 console.error("Failed to create colored character:", error);
             }
@@ -1189,21 +1180,25 @@
         });
       }
       
+            // --- REPLACE YOUR SIZINGSTYLES CONSTANT WITH THIS ---
       const sizingStyles = `
-        .char-wrapper { width: 90%; height: calc(95% / 7); }
-        .fai-chun.horizontal .char-wrapper { width: calc(95% / 7); height: 90%; }
-        .char-count-1 .char-wrapper { height: 65%; }
-        .fai-chun.horizontal .char-count-1 .char-wrapper { width: 50%; }
-        .char-count-2 .char-wrapper { height: calc(80% / 2); }
-        .fai-chun.horizontal .char-count-2 .char-wrapper { width: calc(80% / 2); }
-        .char-count-3 .char-wrapper { height: calc(90% / 3); }
-        .fai-chun.horizontal .char-count-3 .char-wrapper { width: calc(90% / 3); }
-        .char-count-4 .char-wrapper { height: calc(95% / 4); }
-        .fai-chun.horizontal .char-count-4 .char-wrapper { width: calc(95% / 4); }
-        .char-count-5 .char-wrapper { height: calc(95% / 5); }
-        .fai-chun.horizontal .char-count-5 .char-wrapper { width: calc(95% / 5); }
-        .char-count-6 .char-wrapper { height: calc(95% / 6); }
-        .fai-chun.horizontal .char-count-6 .char-wrapper { width: calc(95% / 6); }
+        /* The sizing rules now apply directly to the IMG tags */
+        .fai-chun-text img { width: 90%; height: calc(95% / 7); }
+        .fai-chun.horizontal .fai-chun-text img { width: calc(95% / 7); height: 90%; }
+        
+        /* The char-count classes on the parent now correctly size the child IMGs */
+        .char-count-1 img { height: 65%; }
+        .fai-chun.horizontal .char-count-1 img { width: 50%; }
+        .char-count-2 img { height: calc(80% / 2); }
+        .fai-chun.horizontal .char-count-2 img { width: calc(80% / 2); }
+        .char-count-3 img { height: calc(90% / 3); }
+        .fai-chun.horizontal .char-count-3 img { width: calc(90% / 3); }
+        .char-count-4 img { height: calc(95% / 4); }
+        .fai-chun.horizontal .char-count-4 img { width: calc(95% / 4); }
+        .char-count-5 img { height: calc(95% / 5); }
+        .fai-chun.horizontal .char-count-5 img { width: calc(95% / 5); }
+        .char-count-6 img { height: calc(95% / 6); }
+        .fai-chun.horizontal .char-count-6 img { width: calc(95% / 6); }
       `;
       const styleSheet = document.createElement("style");
       styleSheet.innerText = sizingStyles;
