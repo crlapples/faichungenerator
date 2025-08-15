@@ -1088,13 +1088,12 @@
 
       /**
          * Saves the generated Fai Chun poster as a PNG image using html2canvas.
-         * FINAL, BULLETPROOF VERSION 2: This version uses Promise.all to wait for every
-         * individual image inside the clone to fire its 'onload' event. This is the most
-         * reliable way to ensure all content is fully rendered before measurement,
-         * guaranteeing a correct final image.
+         * FINAL ROBUST VERSION: This version renders a prepared, off-screen clone
+         * of the original poster to guarantee a clean and accurate render, avoiding
+         * all issues with timing, visibility, and CSS conflicts.
          */
         async function savePoster() {
-            // 1. Target the original, stable poster element.
+            // 1. Target the original, stable poster element in the main document.
             const originalPoster = document.querySelector('#posterContainer .fai-chun');
             
             if (!originalPoster) {
@@ -1103,57 +1102,46 @@
                 return;
             }
         
-            // 2. Create a deep clone to work with.
+            // 2. Create a deep clone of the element to work with.
             const clone = originalPoster.cloneNode(true);
         
-            // 3. Prepare the clone for invisible, on-screen rendering.
-            clone.style.position = 'fixed';
-            clone.style.top = '0';
-            clone.style.left = '0';
-            clone.style.zIndex = '-1';
-            clone.style.opacity = '0';
+            // 3. Prepare the clone for off-screen rendering.
+            // This makes it fully measurable by the browser without being visible.
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px'; // Position it far off-screen.
+            clone.style.top = '0px';
+            
+            // Ensure the clone's container has the same explicit dimensions as the original.
+            const originalRect = originalPoster.getBoundingClientRect();
+            clone.style.width = `${originalRect.width}px`;
+            clone.style.height = `${originalRect.height}px`;
         
-            // 4. Append the clone to the body to start the rendering process.
+            // 4. Append the clone to the body so it becomes part of the document layout.
             document.body.appendChild(clone);
         
+            // 5. Force absolute pixel dimensions on the clone's children.
+            // We measure the children of the ORIGINAL element to get the correct dimensions.
+            const originalCharWrappers = originalPoster.querySelectorAll('.char-wrapper');
+            const cloneCharWrappers = clone.querySelectorAll('.char-wrapper');
+        
+            originalCharWrappers.forEach((originalWrapper, index) => {
+                const cloneWrapper = cloneCharWrappers[index];
+                if (cloneWrapper) {
+                    const rect = originalWrapper.getBoundingClientRect();
+                    cloneWrapper.style.height = `${rect.height}px`;
+                    cloneWrapper.style.flexBasis = `${rect.height}px`;
+                    cloneWrapper.style.width = `${rect.width}px`; // Also lock in the width.
+                }
+            });
+        
             try {
-                // 5. THE CRITICAL FIX: Wait for all images inside the clone to fully load.
-                const images = clone.querySelectorAll('img');
-                const imageLoadPromises = [];
-        
-                images.forEach(img => {
-                    imageLoadPromises.push(new Promise(resolve => {
-                        // If the image is already loaded (e.g., from cache), resolve immediately.
-                        if (img.complete) {
-                            resolve();
-                        } else {
-                            // Otherwise, wait for the 'onload' event.
-                            img.onload = resolve;
-                            // Also handle potential errors
-                            img.onerror = resolve; 
-                        }
-                    }));
-                });
-        
-                // The code will pause here until every single image has loaded.
-                await Promise.all(imageLoadPromises);
-        
-                // 6. Now that all images are loaded, it is 100% safe to measure.
-                const cloneCharWrappers = clone.querySelectorAll('.char-wrapper');
-                cloneCharWrappers.forEach(wrapper => {
-                    const rect = wrapper.getBoundingClientRect();
-                    wrapper.style.height = `${rect.height}px`;
-                    wrapper.style.flexBasis = `${rect.height}px`;
-                    wrapper.style.width = `${rect.width}px`;
-                });
-        
-                // 7. Render the perfectly prepared clone.
+                // 6. Render the prepared, off-screen clone.
                 const canvas = await html2canvas(clone, {
                     backgroundColor: null,
                     scale: 3
                 });
                 
-                // 8. Trigger the download.
+                // 7. Trigger the download.
                 const link = document.createElement('a');
                 link.download = 'fai-chun.png';
                 link.href = canvas.toDataURL('image/png');
@@ -1162,13 +1150,15 @@
             } catch (error) {
                 console.error("Error during html2canvas rendering:", error);
             } finally {
-                // 9. CRITICAL: Clean up by removing the clone from the DOM.
+                // 8. CRITICAL: Clean up by removing the clone from the DOM.
                 document.body.removeChild(clone);
                 
+                // Hide any modals that might be open.
                 hideSaveModal();
                 hidePreview();
             }
         }
+
       document.addEventListener('DOMContentLoaded', () => {
           fetch('character_map.json')
               .then(response => response.json())
@@ -1479,7 +1469,7 @@
                 // This logic overrides your static CSS to handle dynamic padding and fix save issues.
                 if (orientation === 'vertical' && characters.length > 0) {
                     // FIX for Vertical Overflow & Squishing:
-                    wrapperDiv.style.height = '10%';
+                    wrapperDiv.style.flexBasis = '10%';
                     // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
                     wrapperDiv.style.flexShrink = '0';
                 } else {
