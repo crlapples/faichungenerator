@@ -566,6 +566,55 @@
         overflow: hidden;
       }
 
+            /* --- NEW: Styles for Fullscreen Preview --- */
+      #fullscreenPreview {
+        position: fixed; /* Position relative to the viewport */
+        top: 0;
+        left: 0;
+        width: 100vw; /* 100% of viewport width */
+        height: 100vh; /* 100% of viewport height */
+        background-color: rgba(0, 0, 0, 0.85); /* Semi-transparent black background */
+        z-index: 2000; /* Ensure it's on top of everything */
+        display: none; /* Hidden by default */
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        box-sizing: border-box;
+      }
+
+      /* This class will be toggled by JavaScript to show the overlay */
+      #fullscreenPreview.visible {
+        display: flex;
+      }
+
+      #fullscreenContent {
+        /* This ensures the cloned image is large but never overflows the screen */
+        max-width: 95vw;
+        max-height: 95vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      /* Make the cloned element's dimensions work within the container */
+      #fullscreenContent .fai-chun {
+        width: auto;
+        height: auto;
+        max-width: 100%;
+        max-height: 95vh; /* Give it a max-height to respect its container */
+      }
+
+      #closeFullscreen {
+        position: absolute;
+        top: 15px;
+        right: 25px;
+        color: white;
+        font-size: 3rem;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+      }
+
 
       /* --- NEW ---: Responsive styles for mobile and tablet */
       @media (max-width: 768px) {
@@ -587,6 +636,9 @@
         .fai-chun.horizontal {
           max-width: 28rem;
           height: 8rem;
+        }
+        #textColorSelector.visible-flex {
+          max-height: unset;
         }
                 /* --- NEW Tablet Styles --- */
         .tooltip {
@@ -624,6 +676,9 @@
           margin-bottom: 1.2rem;
           margin-left: 0.5rem;
           margin-right: 0.5rem;
+        }
+        #textColorSelector.visible-flex {
+          max-height: unset;
         }
         .title {
           font-size: 1.25rem;
@@ -1040,6 +1095,10 @@
           const paddingBottomValue = document.getElementById('paddingBottomValue');
           const paddingLeftValue = document.getElementById('paddingLeftValue');
 
+          const fullscreenPreview = document.getElementById('fullscreenPreview');
+          const fullscreenContent = document.getElementById('fullscreenContent');
+          const closeFullscreen = document.getElementById('closeFullscreen');
+
           function deselectAll(container) {
               container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
           }
@@ -1188,6 +1247,16 @@
                   hideSaveModal();
               }
           });
+          closeFullscreen.addEventListener('click', () => {
+              fullscreenPreview.classList.remove('visible');
+          });
+
+          // Optional: Also close the preview by clicking the dark background
+          fullscreenPreview.addEventListener('click', (event) => {
+              if (event.target === fullscreenPreview) {
+                  fullscreenPreview.classList.remove('visible');
+              }
+          });
       });
 
             // --- Replace your entire old function with this new, corrected version ---
@@ -1295,6 +1364,19 @@
             }
         }
         setTimeout(() => smoothScrollTo(posterContainer), 50);
+        const posterElement = posterContainer.querySelector('.fai-chun');
+        if (posterElement) {
+            // Clear any previous content
+            fullscreenContent.innerHTML = '';
+            // Clone the node so we don't move the original from the page
+            const clone = posterElement.cloneNode(true);
+            // Remove the onclick event from the clone to prevent saving from the preview
+            clone.onclick = null;
+            // Add the clone to our fullscreen container
+            fullscreenContent.appendChild(clone);
+            // Make the overlay visible
+            fullscreenPreview.classList.add('visible');
+        }
       }
       
       const sizingStyles = `
@@ -1335,6 +1417,13 @@
                 <button id="cancelButton" class="modal-button">Cancel</button>
                 <button id="confirmSaveButton" class="modal-button primary">Confirm & Save</button>
             </div>
+        </div>
+    </div>
+        <!-- ADD THIS ENTIRE BLOCK FOR THE FULLSCREEN PREVIEW -->
+    <div id="fullscreenPreview">
+        <span id="closeFullscreen">&times;</span>
+        <div id="fullscreenContent">
+            <!-- The cloned Fai Chun will be placed here by JavaScript -->
         </div>
     </div>
 </body>
