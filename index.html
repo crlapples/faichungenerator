@@ -612,38 +612,27 @@
         aspect-ratio: 36 / 10;
       }
 
-            /* FIND AND DELETE THIS RULE */
       #fullscreenContent .fai-chun.vertical .char-wrapper {
         margin-left: auto;
         margin-right: auto;
       }
 
       /* Actions are now a regular flex item, NOT positioned absolute */
-            /* REPLACEMENT CODE FOR CENTERING THE ACTIONS */
       #fullscreenActions {
-        position: absolute;
-        top: 50%;
-        left: 50%;
+        flex-shrink: 0; /* Prevent the actions container from shrinking */
+        padding-top: 2vh; /* Give it some space from the content above */
         display: flex;
-        flex-direction: column; /* Stack buttons vertically */
         gap: 1rem;
-        padding: 1.5rem; /* More padding */
-        background-color: rgba(40, 40, 40, 0.8); /* Darker, more solid background */
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 16px;
         opacity: 0;
         pointer-events: none;
-        /* Start centered, but scaled down and slightly lower */
-        transform: translate(-50%, -50%) scale(0.9) translateY(20px);
+        transform: translateY(20px);
         transition: opacity 0.3s ease, transform 0.3s ease;
-        cursor: default;
       }
 
       #fullscreenActions.visible {
         opacity: 1;
         pointer-events: auto;
-        /* End centered and at full scale */
-        transform: translate(-50%, -50%) scale(1) translateY(0);
+        transform: translateY(0);
       }
       
       /* Make the buttons larger and easier to click */
@@ -857,7 +846,7 @@
     </div>
 
     <div class="generator-container">
-      <h1 class="title">寫春聯</h1>
+      <h1 class="title">Custom Fai Chun</h1>
 
             <!-- New container for both selectors -->
       <div id="styleSelectors">
@@ -997,7 +986,7 @@
         >
         <button
           id="createBtn"
-          onclick="generateFaiChun() , fullScreenPopup()"
+          onclick="generateFaiChun()"
           class="generate-button"
         >
           Create
@@ -1424,9 +1413,6 @@
             }
         }
         setTimeout(() => smoothScrollTo(posterContainer), 50);
-      }
-
-      async function fullScreenPopup() {
         const posterElement = posterContainer.querySelector('.fai-chun');
         if (posterElement) {
             // Clear any previous content
