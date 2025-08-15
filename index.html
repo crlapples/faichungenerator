@@ -612,9 +612,9 @@
         aspect-ratio: 36 / 10;
       }
 
-      #fullscreenContent .fai-chun.vertical .char-wrapper {
-        margin-left: auto;
-        margin-right: auto;
+            /* REPLACE THE OLD RULE WITH THIS ONE */
+      #fullscreenContent .fai-chun.vertical .fai-chun-text {
+        align-items: center;
       }
 
       /* Actions are now a regular flex item, NOT positioned absolute */
@@ -986,7 +986,7 @@
         >
         <button
           id="createBtn"
-          onclick="generateFaiChun()"
+          onclick="generateFaiChun() , fullScreenPopup()"
           class="generate-button"
         >
           Create
@@ -1413,6 +1413,9 @@
             }
         }
         setTimeout(() => smoothScrollTo(posterContainer), 50);
+      }
+
+      async function fullScreenPopup() {
         const posterElement = posterContainer.querySelector('.fai-chun');
         if (posterElement) {
             // Clear any previous content
