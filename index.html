@@ -783,7 +783,6 @@
                         <input type="color" id="bgColorPickerInput" value="#dc2626">
                         <div class="checkmark">✓</div>
                     </label>
-                    <button class="confirm-button" id="bgConfirmBtn">Choose Color</button>
                 </div>
             </div>
         </div>
@@ -803,7 +802,6 @@
                         <input type="color" id="textColorPickerInput" value="#FDE047">
                         <div class="checkmark">✓</div>
                     </label>
-                    <button class="confirm-button" id="textConfirmBtn">Choose Color</button>
                 </div>
             </div>
         </div>
@@ -1087,36 +1085,17 @@
               setTimeout(() => smoothScrollTo(textColorSelector), 200);
           });
 
-          bgColorPickerInput.addEventListener('input', (event) => {
-              // Update the label's color preview
-              bgColorPickerLabel.style.backgroundColor = event.target.value;
-              
-              // --- ADDED LOGIC ---
-              // Deselect any other background choice and select this picker
-              deselectAll(bgChoicesContainer);
-              bgColorPickerLabel.classList.add('selected');
-              
-              // Update the application state
-              isTransparentMode = false;
-              isBgColorSelected = true;
-              selectedBackgroundColor = event.target.value;
-              
-              // Check if the UI needs to reveal the next section
-              checkUiState();
-              // Regenerate the poster with the new color
-              generateFaiChun();
-          });
-
-          bgConfirmBtn.addEventListener('click', () => {
-              deselectAll(bgChoicesContainer);
-              bgColorPickerLabel.classList.add('selected');
-              isTransparentMode = false;
-              isBgColorSelected = true;
-              selectedBackgroundColor = bgColorPickerInput.value;
-              checkUiState();
-              generateFaiChun();
-              setTimeout(() => smoothScrollTo(textColorSelector), 200);
-          });
+          // Add this new event listener for the background palette label
+            bgColorPickerLabel.addEventListener('click', () => {
+                // This logic runs instantly when you click the 🎨 icon
+                deselectAll(bgChoicesContainer);
+                bgColorPickerLabel.classList.add('selected');
+                isTransparentMode = false;
+                isBgColorSelected = true;
+                selectedBackgroundColor = bgColorPickerInput.value; // Use the input's current color
+                checkUiState();
+                generateFaiChun();
+            });
           
           // --- EVENT LISTENERS FOR TEXT COLOR ---
           textChoicesContainer.addEventListener('click', (event) => {
@@ -1130,25 +1109,20 @@
               generateFaiChun();
               setTimeout(() => smoothScrollTo(inputSection), 200);
           });
-          
-          textColorPickerInput.addEventListener('input', (event) => {
-              // Update the label's color preview
-              textColorPickerLabel.style.backgroundColor = event.target.value;
 
-              // --- ADDED LOGIC ---
-              // Deselect any other text color choice and select this picker
-              deselectAll(textChoicesContainer);
-              textColorPickerLabel.classList.add('selected');
+          // Replace this...
+            textColorPickerInput.addEventListener('input', (event) => {
+                textColorPickerLabel.style.backgroundColor = event.target.value;
+            });
 
-              // Update the application state
-              selectedTextColor = event.target.value;
-              isTextColorSelected = true;
-
-              // Check if the UI needs to reveal the next section
-              checkUiState();
-              // Regenerate the poster with the new color
-              generateFaiChun();
-          });
+            // ...with this new version
+            textColorPickerInput.addEventListener('input', (event) => {
+                // Update the swatch color preview
+                textColorPickerLabel.style.backgroundColor = event.target.value;
+                // Run the full selection and update logic for a live preview
+                selectedTextColor = event.target.value;
+                generateFaiChun();
+            });
 
           textConfirmBtn.addEventListener('click', () => {
               deselectAll(textChoicesContainer);
