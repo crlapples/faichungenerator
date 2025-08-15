@@ -1274,37 +1274,31 @@
                   hideSaveModal();
               }
           });
-          closeFullscreen.addEventListener('click', () => {
-              fullscreenPreview.classList.remove('visible');
-          });
-
-          // Optional: Also close the preview by clicking the dark background
-          fullscreenPreview.addEventListener('click', (event) => {
-              if (event.target === fullscreenPreview) {
-                  fullscreenPreview.classList.remove('visible');
-              }
-          });
-
+          // A single function to handle closing the preview
           function hidePreview() {
               fullscreenPreview.classList.remove('visible');
-              fullscreenActions.classList.remove('visible'); // Also hide actions
+              fullscreenActions.classList.remove('visible'); // Also hide the actions
           }
 
-          // Clicking the dark background shows/hides the action buttons
+          // ONE listener for the entire preview overlay
           fullscreenPreview.addEventListener('click', (event) => {
+              // If the user clicks the dark background or the image itself...
               if (event.target === fullscreenPreview || event.target === fullscreenContent) {
+                  // ...toggle the visibility of the action buttons.
                   fullscreenActions.classList.toggle('visible');
               }
           });
 
-          // The new "Save" button saves the poster and then closes the preview
+          // Listener for the "Save" button inside the preview
           savePreviewBtn.addEventListener('click', () => {
-              savePoster(); // This saves the original poster from the main page
-              hidePreview();
+              savePoster();  // Save the original poster
+              hidePreview(); // Then close the preview
           });
 
-          // The new "Close" button just closes the preview
-          closePreviewBtn.addEventListener('click', hidePreview);
+          // Listener for the "Close" button inside the preview
+          closePreviewBtn.addEventListener('click', () => {
+              hidePreview(); // Just close the preview
+          });
       });
 
             // --- Replace your entire old function with this new, corrected version ---
