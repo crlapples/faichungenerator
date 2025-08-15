@@ -617,7 +617,6 @@
       }
 
 
-      /* Actions are now a regular flex item, NOT positioned absolute */
       #fullscreenActions {
         flex-shrink: 0; /* Prevent the actions container from shrinking */
         padding-top: 2vh; /* Give it some space from the content above */
@@ -986,7 +985,7 @@
         >
         <button
           id="createBtn"
-          onclick="generateFaiChun() , fullscreenPopup()"
+          onclick="generateFaiChun(); fullscreenPopup();"
           class="generate-button"
         >
           Create
@@ -1400,10 +1399,14 @@
                     // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
                     wrapperDiv.style.flexShrink = '0';
                 } else {
-                    // FIX for Horizontal Stretching:
-                    // Override the fixed '10rem' height to be responsive to the container.
+                    // FIX for Horizontal Overflow and Stretching:
+                    // Set a base size of 0, allowing it to shrink from its calculated size.
+                    wrapperDiv.style.flexBasis = '0';
+                    // CRITICAL: Allow the item to shrink if the container runs out of space.
+                    wrapperDiv.style.flexShrink = '1';
+                    // Set height relative to the container to prevent stretching on save.
                     wrapperDiv.style.height = '95%';
-                    // Enforce a square shape to prevent the image from stretching.
+                    // Enforce a square shape.
                     wrapperDiv.style.aspectRatio = '1 / 1';
                 }
                 wrapperDiv.appendChild(img);
@@ -1415,19 +1418,21 @@
         setTimeout(() => smoothScrollTo(posterContainer), 50);
       }
 
-      async function fullscreenPopup() {
-        const posterElement = posterContainer.querySelector('.fai-chun');
-        if (posterElement) {
-            // Clear any previous content
-            fullscreenContent.innerHTML = '';
-            // Clone the node so we don't move the original from the page
-            const clone = posterElement.cloneNode(true);
-            // Remove the onclick event from the clone to prevent saving from the preview
-            clone.onclick = null;
-            // Add the clone to our fullscreen container
-            fullscreenContent.appendChild(clone);
-            // Make the overlay visible
-            fullscreenPreview.classList.add('visible');
+      function fullscreenPopup() {
+        setTimeout(() => {
+              const posterContainer = document.getElementById('posterContainer');
+              const posterElement = posterContainer.querySelector('.fai-chun');
+
+              if (posterElement && fullscreenPreview && fullscreenContent) {
+                  fullscreenContent.innerHTML = ''; // Clear old content
+                  const clone = posterElement.cloneNode(true);
+                  clone.onclick = null; // Disable save modal on the clone
+                  fullscreenContent.appendChild(clone);
+                  fullscreenPreview.classList.add('visible');
+                  // IMPORTANT: Ensure action buttons are hidden initially
+                  fullscreenActions.classList.remove('visible');
+              }
+          }, 50); // 50ms delay is enough for the DOM to update
         }
       }
       
