@@ -747,6 +747,10 @@
                 <div class="background-choice" data-color="#FFFFFF" style="background-color: #FFFFFF;">
                     <div class="checkmark">✓</div>
                 </div>
+                <div class="background-choice" data-choice="transparent">
+                    👻
+                    <div class="checkmark">✓</div>
+                </div>
                 <!-- The User Color Picker for Background -->
                 <div class="picker-container">
                     <label class="background-choice" id="bgColorPickerLabel">
@@ -754,10 +758,6 @@
                         <input type="color" id="bgColorPickerInput" value="#dc2626">
                     </label>
                     <button class="confirm-button" id="bgConfirmBtn">Choose Color</button>
-                </div>
-                <div class="background-choice" data-choice="transparent">
-                    👻
-                    <div class="checkmark">✓</div>
                 </div>
             </div>
         </div>
@@ -921,55 +921,47 @@
           }
 
           function checkUiState() {
-              // Show text selector if a background choice (color OR transparent) has been made
               if (isBgColorSelected || isTransparentMode) {
                   textColorSelector.classList.remove('hidden');
                   textColorSelector.classList.add('visible-flex');
               }
-              
-              // Show input section if a background choice AND a text color choice have been made
               if ((isBgColorSelected || isTransparentMode) && isTextColorSelected) {
                   inputSection.classList.add('visible');
               }
-              
               if (document.getElementById('chineseText').value.trim()) {
                   generateFaiChun();
               }
           }
 
-          // --- UNIFIED EVENT LISTENER FOR BACKGROUND CHOICES ---
+          // --- EVENT LISTENERS FOR BACKGROUND COLOR ---
           bgChoicesContainer.addEventListener('click', (event) => {
               const choice = event.target.closest('.background-choice');
-              if (!choice) return; // Exit if click wasn't on a choice
+              if (!choice) return;
 
               deselectAll(bgChoicesContainer);
               choice.classList.add('selected');
 
-              // Check if the transparent button was clicked
               if (choice.dataset.choice === 'transparent') {
                   isTransparentMode = true;
-                  isBgColorSelected = false; // It's not a color
+                  isBgColorSelected = false;
                   selectedBackgroundColor = null;
-              } 
-              // Check if a color swatch was clicked
-              else if (choice.dataset.color) {
+              } else if (choice.dataset.color) {
                   isTransparentMode = false;
                   isBgColorSelected = true;
                   selectedBackgroundColor = choice.dataset.color;
               }
-              
               checkUiState();
           });
 
-          // Live preview for the color picker
           bgColorPickerInput.addEventListener('input', (event) => {
               bgColorPickerLabel.style.backgroundColor = event.target.value;
           });
 
-          // Confirm button for the color picker
+          // --- CORRECTED LOGIC FOR THE CONFIRM BUTTON ---
           bgConfirmBtn.addEventListener('click', () => {
               deselectAll(bgChoicesContainer);
-              bgColorPickerLabel.parentElement.classList.add('selected'); // Select the container of the label
+              // CORRECTED: Add .selected directly to the label, which contains the checkmark
+              bgColorPickerLabel.classList.add('selected'); 
               
               isTransparentMode = false;
               isBgColorSelected = true;
@@ -977,9 +969,9 @@
               checkUiState();
           });
           
-          // --- EVENT LISTENERS FOR TEXT COLOR (Remain the same) ---
+          // --- EVENT LISTENERS FOR TEXT COLOR ---
           textChoicesContainer.addEventListener('click', (event) => {
-              const choice = event.target.closest('.text-choice[data-color]');
+              const choice = event.target.closest('.text-choice');
               if (!choice) return;
               deselectAll(textChoicesContainer);
               choice.classList.add('selected');
@@ -992,9 +984,12 @@
               textColorPickerLabel.style.backgroundColor = event.target.value;
           });
 
+          // --- CORRECTED LOGIC FOR THE CONFIRM BUTTON ---
           textConfirmBtn.addEventListener('click', () => {
               deselectAll(textChoicesContainer);
-              textColorPickerLabel.parentElement.classList.add('selected');
+              // CORRECTED: Add .selected directly to the label
+              textColorPickerLabel.classList.add('selected');
+              
               selectedTextColor = textColorPickerInput.value;
               isTextColorSelected = true;
               checkUiState();
