@@ -541,6 +541,14 @@
       #spacingSelector {
         margin-bottom: 3rem;
       }
+            /* --- NEW: Style for the Transparent Choice Button --- */
+      .background-choice[data-choice="transparent"] {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        background-color: #f3f4f6;
+      }
 
 
       /* --- NEW ---: Responsive styles for mobile and tablet */
@@ -747,6 +755,10 @@
                     </label>
                     <button class="confirm-button" id="bgConfirmBtn">Choose Color</button>
                 </div>
+                <div class="background-choice" data-choice="transparent">
+                    👻
+                    <div class="checkmark">✓</div>
+                </div>
             </div>
         </div>
 
@@ -895,116 +907,80 @@
           // --- Get all UI elements ---
           const textColorSelector = document.getElementById('textColorSelector');
           const inputSection = document.getElementById('inputSection');
-          
-          // Background Elements
           const bgChoicesContainer = document.getElementById('backgroundChoices');
           const bgColorPickerInput = document.getElementById('bgColorPickerInput');
           const bgColorPickerLabel = document.getElementById('bgColorPickerLabel');
           const bgConfirmBtn = document.getElementById('bgConfirmBtn');
-
-          // Text Color Elements
           const textChoicesContainer = document.getElementById('textColorChoices');
           const textColorPickerInput = document.getElementById('textColorPickerInput');
           const textColorPickerLabel = document.getElementById('textColorPickerLabel');
           const textConfirmBtn = document.getElementById('textConfirmBtn');
 
-          const paddingTopSlider = document.getElementById('paddingTop');
-          const paddingRightSlider = document.getElementById('paddingRight');
-          const paddingBottomSlider = document.getElementById('paddingBottom');
-          const paddingLeftSlider = document.getElementById('paddingLeft');
-
-          const paddingTopValue = document.getElementById('paddingTopValue');
-          const paddingRightValue = document.getElementById('paddingRightValue');
-          const paddingBottomValue = document.getElementById('paddingBottomValue');
-          const paddingLeftValue = document.getElementById('paddingLeftValue');
-
-                    // --- Replace the old slider listeners with this block ---
-          paddingTopSlider.addEventListener('input', (event) => {
-              const value = event.target.value;
-              paddingTop = value;
-              paddingTopValue.textContent = `${value}%`; // Update the indicator
-              generateFaiChun();
-          });
-          paddingRightSlider.addEventListener('input', (event) => {
-              const value = event.target.value;
-              paddingRight = value;
-              paddingRightValue.textContent = `${value}%`; // Update the indicator
-              generateFaiChun();
-          });
-          paddingBottomSlider.addEventListener('input', (event) => {
-              const value = event.target.value;
-              paddingBottom = value;
-              paddingBottomValue.textContent = `${value}%`; // Update the indicator
-              generateFaiChun();
-          });
-          paddingLeftSlider.addEventListener('input', (event) => {
-              const value = event.target.value;
-              paddingLeft = value;
-              paddingLeftValue.textContent = `${value}%`; // Update the indicator
-              generateFaiChun();
-          });
-
-          const spacingSelector = document.getElementById('spacingSelector');
-          spacingSelector.addEventListener('change', (event) => {
-              // Update the state variable with the selected value (e.g., "0.5em")
-              characterSpacing = event.target.value;
-              generateFaiChun(); // Re-render with the new spacing
-          });
-
           function deselectAll(container) {
               container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
           }
 
-          // --- UI State Controller ---
-          // This function is called every time a color is confirmed.
           function checkUiState() {
-              // If a background color has been selected, show the text color selector.
-              if (isBgColorSelected) {
+              // Show text selector if a background choice (color OR transparent) has been made
+              if (isBgColorSelected || isTransparentMode) {
                   textColorSelector.classList.remove('hidden');
                   textColorSelector.classList.add('visible-flex');
               }
               
-              // If BOTH colors have been selected, show the final input section
-              // by adding the ORIGINAL .visible class.
-              if (isBgColorSelected && isTextColorSelected) {
-                  inputSection.classList.add('visible'); // <-- CORRECTED
+              // Show input section if a background choice AND a text color choice have been made
+              if ((isBgColorSelected || isTransparentMode) && isTextColorSelected) {
+                  inputSection.classList.add('visible');
               }
               
-              // If text already exists, regenerate the Fai Chun with new colors.
               if (document.getElementById('chineseText').value.trim()) {
                   generateFaiChun();
               }
           }
 
-          // --- EVENT LISTENERS FOR BACKGROUND COLOR ---
+          // --- UNIFIED EVENT LISTENER FOR BACKGROUND CHOICES ---
           bgChoicesContainer.addEventListener('click', (event) => {
-              const choice = event.target.closest('.background-choice[data-color]');
-              if (!choice) return;
-              
+              const choice = event.target.closest('.background-choice');
+              if (!choice) return; // Exit if click wasn't on a choice
+
               deselectAll(bgChoicesContainer);
               choice.classList.add('selected');
-              selectedBackgroundColor = choice.getAttribute('data-color');
-              isBgColorSelected = true;
-              checkUiState(); // Check if we need to reveal the next step
+
+              // Check if the transparent button was clicked
+              if (choice.dataset.choice === 'transparent') {
+                  isTransparentMode = true;
+                  isBgColorSelected = false; // It's not a color
+                  selectedBackgroundColor = null;
+              } 
+              // Check if a color swatch was clicked
+              else if (choice.dataset.color) {
+                  isTransparentMode = false;
+                  isBgColorSelected = true;
+                  selectedBackgroundColor = choice.dataset.color;
+              }
+              
+              checkUiState();
           });
 
+          // Live preview for the color picker
           bgColorPickerInput.addEventListener('input', (event) => {
               bgColorPickerLabel.style.backgroundColor = event.target.value;
           });
 
+          // Confirm button for the color picker
           bgConfirmBtn.addEventListener('click', () => {
               deselectAll(bgChoicesContainer);
-              bgColorPickerLabel.classList.add('selected');
-              selectedBackgroundColor = bgColorPickerInput.value;
+              bgColorPickerLabel.parentElement.classList.add('selected'); // Select the container of the label
+              
+              isTransparentMode = false;
               isBgColorSelected = true;
+              selectedBackgroundColor = bgColorPickerInput.value;
               checkUiState();
           });
           
-          // --- EVENT LISTENERS FOR TEXT COLOR ---
+          // --- EVENT LISTENERS FOR TEXT COLOR (Remain the same) ---
           textChoicesContainer.addEventListener('click', (event) => {
               const choice = event.target.closest('.text-choice[data-color]');
               if (!choice) return;
-              
               deselectAll(textChoicesContainer);
               choice.classList.add('selected');
               selectedTextColor = choice.getAttribute('data-color');
@@ -1018,18 +994,14 @@
 
           textConfirmBtn.addEventListener('click', () => {
               deselectAll(textChoicesContainer);
-              textColorPickerLabel.classList.add('selected');
+              textColorPickerLabel.parentElement.classList.add('selected');
               selectedTextColor = textColorPickerInput.value;
               isTextColorSelected = true;
               checkUiState();
           });
           
-          // Event listeners for orientation and direction still trigger regeneration
-          // --- AFTER (The Correct Code) ---
-          // Listen for a change on the container for orientation buttons
+          // Other event listeners
           document.getElementById('orientationSelector').addEventListener('change', generateFaiChun);
-
-          // Listen for a change on the container for direction buttons
           document.getElementById('directionSelector').addEventListener('change', generateFaiChun);
       });
 
