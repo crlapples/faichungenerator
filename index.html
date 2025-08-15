@@ -640,6 +640,13 @@
         pointer-events: auto;
         transform: translateY(0);
       }
+
+            /* --- ADD THIS NEW RULE TO MAKE THE PREVIEW BUTTONS BIGGER --- */
+      #fullscreenActions .modal-button {
+        width: auto; /* Allow the button to size to its content */
+        padding: 0.8rem 1.8rem; /* Increase padding for a larger click area */
+        font-size: 1.1rem; /* Make the text larger */
+      }
       
       /* --- NEW ---: Responsive styles for mobile and tablet */
       @media (max-width: 768px) {
@@ -1274,30 +1281,34 @@
                   hideSaveModal();
               }
           });
-          // A single function to handle closing the preview
+                    // --- FINAL, CORRECTED PREVIEW LISTENERS ---
+
+          // A single, clean function to hide the preview and its actions
           function hidePreview() {
               fullscreenPreview.classList.remove('visible');
-              fullscreenActions.classList.remove('visible'); // Also hide the actions
+              fullscreenActions.classList.remove('visible');
           }
 
-          // ONE listener for the entire preview overlay
+          // This ONE listener handles clicks on the entire overlay
           fullscreenPreview.addEventListener('click', (event) => {
-              // If the user clicks the dark background or the image itself...
-              if (event.target === fullscreenPreview || event.target === fullscreenContent) {
-                  // ...toggle the visibility of the action buttons.
+              // Check if the click happened OUTSIDE of the action buttons area
+              if (!event.target.closest('#fullscreenActions')) {
+                  // If it did, toggle the visibility of the action buttons
                   fullscreenActions.classList.toggle('visible');
               }
           });
 
-          // Listener for the "Save" button inside the preview
-          savePreviewBtn.addEventListener('click', () => {
-              savePoster();  // Save the original poster
-              hidePreview(); // Then close the preview
+          // Listener for the "Save" button
+          savePreviewBtn.addEventListener('click', (event) => {
+              event.stopPropagation(); // Stop the click from bubbling up to the overlay
+              savePoster();
+              hidePreview();
           });
 
-          // Listener for the "Close" button inside the preview
-          closePreviewBtn.addEventListener('click', () => {
-              hidePreview(); // Just close the preview
+          // Listener for the "Close" button
+          closePreviewBtn.addEventListener('click', (event) => {
+              event.stopPropagation(); // Stop the click from bubbling up to the overlay
+              hidePreview();
           });
       });
 
