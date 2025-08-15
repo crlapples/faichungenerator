@@ -489,6 +489,7 @@
         max-height: 480px; /* Or a value large enough to fit the content */
         opacity: 1;
         pointer-events: auto;
+        margin-bottom: 3.5rem;
         overflow: visible;
       }
 
@@ -1038,6 +1039,19 @@
           // --- ORIENTATION/DIRECTION LISTENERS ---
           document.getElementById('orientationSelector').addEventListener('change', generateFaiChun);
           document.getElementById('directionSelector').addEventListener('change', generateFaiChun);
+
+          const modalOverlay = document.getElementById('modalOverlay');
+          const confirmSaveButton = document.getElementById('confirmSaveButton');
+          const cancelButton = document.getElementById('cancelButton');
+
+          confirmSaveButton.addEventListener('click', savePoster);
+          cancelButton.addEventListener('click', hideSaveModal);
+          modalOverlay.addEventListener('click', (event) => {
+              // Only hide if the click is on the dark overlay itself, not the white box
+              if (event.target === modalOverlay) {
+                  hideSaveModal();
+              }
+          });
       });
 
       // --- CORRECTED GENERATION FUNCTION ---
@@ -1078,28 +1092,9 @@
         imageContainer.classList.add(`char-count-${characterCount}`);
         imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
 
-        let finalGapValue = "0";
-        if (orientation === 'vertical') {
-            switch (characterSpacing) {
-                case 'quarter': finalGapValue = '0.5rem'; break;
-                case 'third':   finalGapValue = '0.7rem'; break;
-                case 'half':    finalGapValue = '1rem'; break;
-                case 'full':    finalGapValue = '2rem'; break;
-                default:        finalGapValue = '0'; break;
-            }
-        } else {
-            switch (characterSpacing) {
-                case 'quarter': finalGapValue = '0.25rem'; break;
-                case 'third':   finalGapValue = '0.35rem'; break;
-                case 'half':    finalGapValue = '0.5rem'; break;
-                case 'full':    finalGapValue = '1rem'; break;
-                default:        finalGapValue = '0'; break;
-            }
-        }
-        imageContainer.style.gap = finalGapValue;
-
+                // --- REPLACE THE OLD .forEach LOOP WITH THIS NEW ONE ---
         const characters = textInput.split('');
-        characters.forEach(char => {
+        characters.forEach((char, index) => { // Note: we now use the index
             const filename = characterMap[char];
             if (filename) {
                 const charDiv = document.createElement('div');
@@ -1113,9 +1108,31 @@
                 wrapperDiv.className = 'char-wrapper';
                 wrapperDiv.appendChild(charDiv);
                 
+                // Apply spacing using margin, but only if it's not the last character
+                if (index < characters.length - 1) {
+                    if (orientation === 'vertical') {
+                        // For vertical, rem units are predictable and work well.
+                        switch (characterSpacing) {
+                            case 'quarter': wrapperDiv.style.marginBottom = '0.5rem'; break;
+                            case 'third':   wrapperDiv.style.marginBottom = '0.7rem'; break;
+                            case 'half':    wrapperDiv.style.marginBottom = '1rem'; break;
+                            case 'full':    wrapperDiv.style.marginBottom = '2rem'; break;
+                        }
+                    } else { // Horizontal orientation
+                        // For horizontal, percentage is RELATIVE to the container, which is perfect.
+                        switch (characterSpacing) {
+                            case 'quarter': wrapperDiv.style.marginRight = '1.5%'; break;
+                            case 'third':   wrapperDiv.style.marginRight = '2%'; break;
+                            case 'half':    wrapperDiv.style.marginRight = '3%'; break;
+                            case 'full':    wrapperDiv.style.marginRight = '6%'; break;
+                        }
+                    }
+                }
+                
                 imageContainer.appendChild(wrapperDiv);
             }
         });
+        // --- END OF REPLACEMENT BLOCK ---
 
         faiChunContainer.appendChild(imageContainer);
         posterContainer.appendChild(faiChunContainer);
