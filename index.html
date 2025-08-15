@@ -455,22 +455,11 @@
         background-color: #e5e7eb;
       }
 
-      /* --- THE NEW, BETTER MAGIC: MASK-IMAGE COLORING --- */
-      .fai-chun-char {
-        /* Use the character PNG as a mask */
-        -webkit-mask-size: contain;
-        mask-size: contain;
-        -webkit-mask-repeat: no-repeat;
-        mask-repeat: no-repeat;
-        -webkit-mask-position: center;
-        mask-position: center;
-        
-        /* The background color of this div will show through the mask,
-           effectively coloring the character. */
-        background-color: var(--character-color, #000000);
-        
+            /* --- ADD THIS NEW RULE --- */
+      .char-wrapper img {
         width: 100%;
         height: 100%;
+        object-fit: contain;
       }
       .hidden {
         display: none !important;
@@ -906,6 +895,47 @@
       let characterSpacing = "none";
       let characterMap = {};
 
+      function createColoredCharacter(char, color) {
+          return new Promise((resolve, reject) => {
+              const filename = characterMap[char];
+              if (!filename) {
+                  reject(new Error(`Character not found in map: ${char}`));
+                  return;
+              }
+
+              const imageUrl = `processed_web_characters/${filename}`;
+              const img = new Image();
+              img.crossOrigin = "Anonymous"; // Important for canvas operations
+
+              img.onload = () => {
+                  const canvas = document.createElement('canvas');
+                  canvas.width = img.width;
+                  canvas.height = img.height;
+                  const ctx = canvas.getContext('2d');
+
+                  // Step 1: Fill the canvas with the target color
+                  ctx.fillStyle = color;
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                  // Step 2: Use the character image as a mask
+                  // 'destination-in' means "keep the destination (the color) where the source (the character) is".
+                  ctx.globalCompositeOperation = 'destination-in';
+                  
+                  // Step 3: Draw the character image
+                  ctx.drawImage(img, 0, 0);
+
+                  // Resolve the promise with the new image data
+                  resolve(canvas.toDataURL('image/png'));
+              };
+
+              img.onerror = () => {
+                  reject(new Error(`Failed to load image: ${imageUrl}`));
+              };
+
+              img.src = imageUrl;
+          });
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
           fetch('character_map.json')
               .then(response => response.json())
@@ -1055,71 +1085,65 @@
       });
 
       // --- CORRECTED GENERATION FUNCTION ---
-      function generateFaiChun() {
+      async function generateFaiChun() {
         if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) {
             return;
         }
 
         let textInput = document.getElementById('chineseText').value.trim();
-        const characterCount = textInput.length;
         const posterContainer = document.getElementById('posterContainer');
         const orientation = document.querySelector('input[name="orientation"]:checked').value;
-        const direction = document.querySelector('input[name="direction"]:checked').value;
 
         if (!textInput) {
           posterContainer.innerHTML = '';
           return;
         }
 
-        posterContainer.innerHTML = '';
+        posterContainer.innerHTML = ''; // Clear previous poster
         const faiChunContainer = document.createElement('div');
+        // ... (code to set up faiChunContainer class, background, and onclick is the same)
         let faiChunClass = `fai-chun ${orientation}`;
-        if (orientation === 'horizontal') faiChunClass += ` ${direction}`;
+        if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
         faiChunContainer.className = faiChunClass;
-        
-        // --- THIS LOGIC WAS MISSING ---
-        faiChunContainer.classList.remove('fai-chun-transparent'); // Always reset
+        faiChunContainer.classList.remove('fai-chun-transparent');
         if (isTransparentMode) {
             faiChunContainer.classList.add('fai-chun-transparent');
         } else {
             faiChunContainer.style.backgroundColor = selectedBackgroundColor;
         }
-
         faiChunContainer.onclick = showSaveModal;
         
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
-        imageContainer.classList.add(`char-count-${characterCount}`);
+        imageContainer.classList.add(`char-count-${textInput.length}`);
         imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
 
-                // --- REPLACE THE OLD .forEach LOOP WITH THIS NEW ONE ---
         const characters = textInput.split('');
-        characters.forEach((char, index) => { // Note: we now use the index
-            const filename = characterMap[char];
-            if (filename) {
-                const charDiv = document.createElement('div');
-                charDiv.className = 'fai-chun-char';
-                const imageUrl = `processed_web_characters/${filename}`;
-                charDiv.style.webkitMaskImage = `url(${imageUrl})`;
-                charDiv.style.maskImage = `url(${imageUrl})`;
-                charDiv.style.backgroundColor = selectedTextColor;
 
+        // We MUST use a for...of loop here to work with await
+        for (const [index, char] of characters.entries()) {
+            try {
+                // Await the new colored image from our helper function
+                const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
+
+                // Now create a standard <img> tag, which html2canvas understands perfectly
+                const img = document.createElement('img');
+                img.src = coloredImageDataUrl;
+                
                 const wrapperDiv = document.createElement('div');
                 wrapperDiv.className = 'char-wrapper';
-                wrapperDiv.appendChild(charDiv);
+                wrapperDiv.appendChild(img);
                 
-                // Apply spacing using margin, but only if it's not the last character
+                // Apply margin-based spacing logic (remains the same)
                 if (index < characters.length - 1) {
                     if (orientation === 'vertical') {
-                        // For vertical, rem units are predictable and work well.
                         switch (characterSpacing) {
                             case 'quarter': wrapperDiv.style.marginBottom = '0.5rem'; break;
                             case 'third':   wrapperDiv.style.marginBottom = '0.7rem'; break;
                             case 'half':    wrapperDiv.style.marginBottom = '1rem'; break;
                             case 'full':    wrapperDiv.style.marginBottom = '2rem'; break;
                         }
-                    } else { // Horizontal orientation
-                        // For horizontal, percentage is RELATIVE to the container, which is perfect.
+                    } else {
                         switch (characterSpacing) {
                             case 'quarter': wrapperDiv.style.marginRight = '1.5%'; break;
                             case 'third':   wrapperDiv.style.marginRight = '2%'; break;
@@ -1128,11 +1152,11 @@
                         }
                     }
                 }
-                
                 imageContainer.appendChild(wrapperDiv);
+            } catch (error) {
+                console.error("Failed to create colored character:", error);
             }
-        });
-        // --- END OF REPLACEMENT BLOCK ---
+        }
 
         faiChunContainer.appendChild(imageContainer);
         posterContainer.appendChild(faiChunContainer);
@@ -1158,6 +1182,7 @@
             link.download = 'fai-chun.png';
             link.href = canvas.toDataURL('image/png');
             link.click();
+            hideSaveModal();
         }).catch(err => {
             console.error("Oops, something went wrong during save!", err);
             alert("Sorry, the image could not be saved.");
