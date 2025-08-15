@@ -1089,28 +1089,66 @@
       /**
        * Saves the generated Fai Chun poster as a PNG image using html2canvas.
        */
-      async function savePoster() {
-          const posterElement = document.querySelector('#posterContainer .fai-chun');
-          if (!posterElement) {
-              hideSaveModal();
-              return;
-          }
-
-          try {
-              const canvas = await html2canvas(posterElement, {
-                  backgroundColor: null,
-                  scale: 3
-              });
-              const link = document.createElement('a');
-              link.download = 'fai-chun.png';
-              link.href = canvas.toDataURL('image/png');
-              link.click();
-          } catch (error) {
-              console.error("Failed to save poster:", error);
-          } finally {
-              hideSaveModal();
-          }
-      }
+      /**
+         * Saves the generated Fai Chun poster as a PNG image using html2canvas.
+         * This version includes a fix for squished characters in the output file.
+         */
+        async function savePoster() {
+            // Prioritize the fullscreen preview element, fall back to the main one
+            const posterElement = document.querySelector('#fullscreenContent .fai-chun') || document.querySelector('#posterContainer .fai-chun');
+            
+            if (!posterElement) {
+                hideSaveModal();
+                return;
+            }
+        
+            // --- START: SQUISHED IMAGE FIX ---
+            const charWrappers = posterElement.querySelectorAll('.char-wrapper');
+            const originalStyles = []; // To store original styles so we can restore them
+        
+            // 1. Temporarily set explicit pixel dimensions that html2canvas can understand
+            charWrappers.forEach(wrapper => {
+                // Store the original inline style properties to restore later
+                originalStyles.push({
+                    height: wrapper.style.height,
+                    flexBasis: wrapper.style.flexBasis
+                });
+                
+                // Get the final, browser-rendered dimensions of the element
+                const rect = wrapper.getBoundingClientRect();
+                
+                // Force the height to an absolute pixel value
+                wrapper.style.height = `${rect.height}px`;
+                // Also set flexBasis to this value to avoid any conflicts
+                wrapper.style.flexBasis = `${rect.height}px`;
+            });
+            // --- END: SQUISHED IMAGE FIX ---
+        
+            try {
+                // 2. Now, run html2canvas with the locked-in pixel dimensions
+                const canvas = await html2canvas(posterElement, {
+                    backgroundColor: null, // Use null for transparency
+                    scale: 3 // Render at 3x resolution for high quality
+                });
+                
+                // 3. Trigger the download
+                const link = document.createElement('a');
+                link.download = 'fai-chun.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+        
+            } catch (error) {
+                console.error("Failed to save poster:", error);
+            } finally {
+                // 4. IMPORTANT: Restore the original styles to the element
+                charWrappers.forEach((wrapper, index) => {
+                    wrapper.style.height = originalStyles[index].height;
+                    wrapper.style.flexBasis = originalStyles[index].flexBasis;
+                });
+                
+                hideSaveModal(); // Hide the confirmation modal
+            }
+        }
 
       document.addEventListener('DOMContentLoaded', () => {
           fetch('character_map.json')
