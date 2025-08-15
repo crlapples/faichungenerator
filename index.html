@@ -1088,76 +1088,60 @@
 
       /**
          * Saves the generated Fai Chun poster as a PNG image using html2canvas.
-         * FINAL, ROBUST VERSION: This version guarantees the target element is measurable
-         * before rendering to prevent empty/zero-size image files.
+         * FINAL ROBUST VERSION: This version renders a prepared, off-screen clone
+         * of the original poster to guarantee a clean and accurate render, avoiding
+         * all issues with timing, visibility, and CSS conflicts.
          */
         async function savePoster() {
-            // 1. ALWAYS target the original poster in the main document for stability.
-            const posterElement = document.querySelector('#posterContainer .fai-chun');
+            // 1. Target the original, stable poster element in the main document.
+            const originalPoster = document.querySelector('#posterContainer .fai-chun');
             
-            if (!posterElement) {
+            if (!originalPoster) {
                 console.error("Save failed: Original poster element not found.");
                 hideSaveModal();
                 return;
             }
         
-            // --- PREPARATION FOR RENDERING ---
-            // Store original styles to restore them later.
-            const originalPosterStyle = posterElement.style.cssText;
-            const charWrappers = posterElement.querySelectorAll('.char-wrapper');
-            const originalWrapperStyles = [];
+            // 2. Create a deep clone of the element to work with.
+            const clone = originalPoster.cloneNode(true);
         
-            // 2. Force the poster to be in a measurable state.
-            // This prevents getBoundingClientRect() from returning zero if the element is off-screen.
-            // We hide it from the user with z-index and opacity.
-            posterElement.style.position = 'fixed';
-            posterElement.style.top = '0';
-            posterElement.style.left = '0';
-            posterElement.style.zIndex = '-1'; 
-            posterElement.style.opacity = '0.01';
+            // 3. Prepare the clone for off-screen rendering.
+            // This makes it fully measurable by the browser without being visible.
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px'; // Position it far off-screen.
+            clone.style.top = '0px';
+            
+            // Ensure the clone's container has the same explicit dimensions as the original.
+            const originalRect = originalPoster.getBoundingClientRect();
+            clone.style.width = `${originalRect.width}px`;
+            clone.style.height = `${originalRect.height}px`;
         
-            // 3. Override relative styles with absolute pixel dimensions.
-            let hasValidDimensions = true;
-            charWrappers.forEach(wrapper => {
-                originalWrapperStyles.push({
-                    height: wrapper.style.height,
-                    flexBasis: wrapper.style.flexBasis
-                });
-                
-                const rect = wrapper.getBoundingClientRect();
-                
-                // CRITICAL CHECK: If height is 0, the canvas will be empty.
-                if (rect.height === 0) {
-                    hasValidDimensions = false;
-                    console.error("Save failed: Character wrapper has a calculated height of 0. The poster might be hidden.", wrapper);
+            // 4. Append the clone to the body so it becomes part of the document layout.
+            document.body.appendChild(clone);
+        
+            // 5. Force absolute pixel dimensions on the clone's children.
+            // We measure the children of the ORIGINAL element to get the correct dimensions.
+            const originalCharWrappers = originalPoster.querySelectorAll('.char-wrapper');
+            const cloneCharWrappers = clone.querySelectorAll('.char-wrapper');
+        
+            originalCharWrappers.forEach((originalWrapper, index) => {
+                const cloneWrapper = cloneCharWrappers[index];
+                if (cloneWrapper) {
+                    const rect = originalWrapper.getBoundingClientRect();
+                    cloneWrapper.style.height = `${rect.height}px`;
+                    cloneWrapper.style.flexBasis = `${rect.height}px`;
+                    cloneWrapper.style.width = `${rect.width}px`; // Also lock in the width.
                 }
-                
-                wrapper.style.height = `${rect.height}px`;
-                wrapper.style.flexBasis = `${rect.height}px`;
             });
         
-            // If any wrapper had zero height, abort the save to prevent an empty file.
-            if (!hasValidDimensions) {
-                // Restore original styles before aborting
-                posterElement.style.cssText = originalPosterStyle;
-                charWrappers.forEach((wrapper, index) => {
-                    wrapper.style.height = originalWrapperStyles[index].height;
-                    wrapper.style.flexBasis = originalWrapperStyles[index].flexBasis;
-                });
-                alert("Could not save the poster. Please try generating it again.");
-                hideSaveModal();
-                hidePreview();
-                return;
-            }
-        
             try {
-                // 4. Run html2canvas on the prepared, measurable element.
-                const canvas = await html2canvas(posterElement, {
+                // 6. Render the prepared, off-screen clone.
+                const canvas = await html2canvas(clone, {
                     backgroundColor: null,
                     scale: 3
                 });
                 
-                // 5. Trigger the download.
+                // 7. Trigger the download.
                 const link = document.createElement('a');
                 link.download = 'fai-chun.png';
                 link.href = canvas.toDataURL('image/png');
@@ -1166,12 +1150,8 @@
             } catch (error) {
                 console.error("Error during html2canvas rendering:", error);
             } finally {
-                // 6. IMPORTANT: Restore ALL original styles to clean up the DOM.
-                posterElement.style.cssText = originalPosterStyle;
-                charWrappers.forEach((wrapper, index) => {
-                    wrapper.style.height = originalWrapperStyles[index].height;
-                    wrapper.style.flexBasis = originalWrapperStyles[index].flexBasis;
-                });
+                // 8. CRITICAL: Clean up by removing the clone from the DOM.
+                document.body.removeChild(clone);
                 
                 // Hide any modals that might be open.
                 hideSaveModal();
