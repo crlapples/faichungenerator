@@ -836,19 +836,19 @@
             <p class="tooltip">Character Spacing</p>
             <div class="radio-group">
                 <label>
-                    <input type="radio" name="spacing" value="0" checked> Normal
+                    <input type="radio" name="spacing" value="none" checked> Normal
                 </label>
                 <label>
-                    <input type="radio" name="spacing" value="0.5rem"> ¼ Char
+                    <input type="radio" name="spacing" value="quarter"> ¼ Char
                 </label>
                 <label>
-                    <input type="radio" name="spacing" value="0.7rem"> ⅓ Char
+                    <input type="radio" name="spacing" value="third"> ⅓ Char
                 </label>
                 <label>
-                    <input type="radio" name="spacing" value="1rem"> ½ Char
+                    <input type="radio" name="spacing" value="half"> ½ Char
                 </label>
                 <label>
-                    <input type="radio" name="spacing" value="2rem"> 1 Char
+                    <input type="radio" name="spacing" value="full"> 1 Char
                 </label>
             </div>
         </div>
@@ -882,7 +882,7 @@
       let paddingRight = 5;
       let paddingBottom = 5;
       let paddingLeft = 5;
-      let characterSpacing = "0";
+      let characterSpacing = "none";
       
       let characterMap = {};
 
@@ -1060,10 +1060,32 @@
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
         imageContainer.classList.add(`char-count-${characterCount}`);
-
         imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
 
-        imageContainer.style.gap = characterSpacing;
+        // --- THIS IS THE KEY LOGIC CHANGE ---
+        let finalGapValue = "0"; // Default to no gap
+
+        if (orientation === 'vertical') {
+            // Use larger values for vertical spacing, relative to character height
+            switch (characterSpacing) {
+                case 'quarter': finalGapValue = '0.5rem'; break;
+                case 'third':   finalGapValue = '0.7rem'; break;
+                case 'half':    finalGapValue = '1rem'; break;
+                case 'full':    finalGapValue = '2rem'; break;
+                default:        finalGapValue = '0'; break;
+            }
+        } else { // Horizontal orientation
+            // Use smaller values for horizontal spacing, relative to character width
+            switch (characterSpacing) {
+                case 'quarter': finalGapValue = '0.25rem'; break;
+                case 'third':   finalGapValue = '0.35rem'; break;
+                case 'half':    finalGapValue = '0.5rem'; break;
+                case 'full':    finalGapValue = '1rem'; break;
+                default:        finalGapValue = '0'; break;
+            }
+        }
+        imageContainer.style.gap = finalGapValue;
+        // --- END OF CHANGE ---
 
         const characters = textInput.split('');
         characters.forEach(char => {
