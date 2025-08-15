@@ -151,9 +151,11 @@
           flex-direction: row-reverse; /* Align images right-to-left */
       }
 
-      /* Add this new rule to style the images themselves */
-      .fai-chun-text img {
-          object-fit: contain; /* Ensure image scales within its box */
+            /* REPLACE IT WITH THIS */
+      .char-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
 
       /* Define max sizes for the images inside vertical/horizontal layouts */
@@ -538,6 +540,37 @@
         background-color: transparent !important;
         border: none !important;
         box-shadow: none !important;
+      }
+
+            /* --- NEW: Re-introduce the Smooth Transition Animation --- */
+
+      /* Add a transition to the picker container so it animates too */
+      .picker-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        /* This makes it fade/shrink smoothly */
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* When a selection is made, hide the choices that are NOT selected */
+      #backgroundChoices.selection-made .background-choice:not(.selected),
+      #backgroundChoices.selection-made .picker-container:not(:has(.selected)) {
+        opacity: 0;
+        width: 0;
+        margin: 0;
+        border: 0;
+        overflow: hidden; /* Hide the confirm button inside */
+      }
+      
+      /* Do the same for the text color choices */
+      #textColorChoices.selection-made .text-choice:not(.selected),
+      #textColorChoices.selection-made .picker-container:not(:has(.selected)) {
+        opacity: 0;
+        width: 0;
+        margin: 0;
+        border: 0;
+        overflow: hidden;
       }
 
 
@@ -1078,7 +1111,7 @@
           });
       });
 
-            // --- REPLACE YOUR ENTIRE FUNCTION WITH THIS ---
+                  // --- REPLACE YOUR ENTIRE FUNCTION WITH THIS ---
       async function generateFaiChun() {
         if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) {
             return;
@@ -1134,14 +1167,17 @@
         for (const char of characters) {
             try {
                 const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
-                
-                // --- THIS IS THE KEY CHANGE ---
-                // Create the <img> tag directly
                 const img = document.createElement('img');
                 img.src = coloredImageDataUrl;
                 
-                // NO MORE WRAPPER DIV. Append the <img> directly to the container.
-                imageContainer.appendChild(img);
+                // --- THIS IS THE KEY CHANGE ---
+                // Re-introduce the wrapper div as the flex item
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.className = 'char-wrapper';
+                wrapperDiv.appendChild(img);
+                
+                // Append the wrapper, not the image directly
+                imageContainer.appendChild(wrapperDiv);
                 // --- END OF CHANGE ---
 
             } catch (error) {
@@ -1152,53 +1188,26 @@
         faiChunContainer.appendChild(imageContainer);
         posterContainer.appendChild(faiChunContainer);
       }
-
-      // Your modal and save functions remain the same
-      function showSaveModal() {
-        document.getElementById('modalOverlay').classList.add('visible');
-      }
-      function hideSaveModal() {
-        document.getElementById('modalOverlay').classList.remove('visible');
-      }
-      function savePoster() {
-        const poster = document.querySelector('.fai-chun');
-        if (!poster) return;
-
-        html2canvas(poster, {
-            useCORS: true,
-            scale: 2,
-            backgroundColor: null
-        }).then(canvas => {
-            const link = document.createElement('a');
-            link.download = 'fai-chun.png';
-            link.href = canvas.toDataURL('image/png');
-            link.click();
-            hideSaveModal();
-        }).catch(err => {
-            console.error("Oops, something went wrong during save!", err);
-            alert("Sorry, the image could not be saved.");
-        });
-      }
       
-            // --- REPLACE YOUR SIZINGSTYLES CONSTANT WITH THIS ---
+                // --- REPLACE YOUR SIZINGSTYLES CONSTANT WITH THIS ---
       const sizingStyles = `
-        /* The sizing rules now apply directly to the IMG tags */
-        .fai-chun-text img { width: 90%; height: calc(95% / 7); }
-        .fai-chun.horizontal .fai-chun-text img { width: calc(95% / 7); height: 90%; }
+        /* The sizing rules now apply to the .char-wrapper, which is the flex item */
+        .char-wrapper { width: 90%; height: calc(95% / 7); }
+        .fai-chun.horizontal .char-wrapper { width: calc(95% / 7); height: 90%; }
         
-        /* The char-count classes on the parent now correctly size the child IMGs */
-        .char-count-1 img { height: 65%; }
-        .fai-chun.horizontal .char-count-1 img { width: 50%; }
-        .char-count-2 img { height: calc(80% / 2); }
-        .fai-chun.horizontal .char-count-2 img { width: calc(80% / 2); }
-        .char-count-3 img { height: calc(90% / 3); }
-        .fai-chun.horizontal .char-count-3 img { width: calc(90% / 3); }
-        .char-count-4 img { height: calc(95% / 4); }
-        .fai-chun.horizontal .char-count-4 img { width: calc(95% / 4); }
-        .char-count-5 img { height: calc(95% / 5); }
-        .fai-chun.horizontal .char-count-5 img { width: calc(95% / 5); }
-        .char-count-6 img { height: calc(95% / 6); }
-        .fai-chun.horizontal .char-count-6 img { width: calc(95% / 6); }
+        /* The char-count classes on the parent now correctly size the child .char-wrapper divs */
+        .char-count-1 .char-wrapper { height: 65%; }
+        .fai-chun.horizontal .char-count-1 .char-wrapper { width: 50%; }
+        .char-count-2 .char-wrapper { height: calc(80% / 2); }
+        .fai-chun.horizontal .char-count-2 .char-wrapper { width: calc(80% / 2); }
+        .char-count-3 .char-wrapper { height: calc(90% / 3); }
+        .fai-chun.horizontal .char-count-3 .char-wrapper { width: calc(90% / 3); }
+        .char-count-4 .char-wrapper { height: calc(95% / 4); }
+        .fai-chun.horizontal .char-count-4 .char-wrapper { width: calc(95% / 4); }
+        .char-count-5 .char-wrapper { height: calc(95% / 5); }
+        .fai-chun.horizontal .char-count-5 .char-wrapper { width: calc(95% / 5); }
+        .char-count-6 .char-wrapper { height: calc(95% / 6); }
+        .fai-chun.horizontal .char-count-6 .char-wrapper { width: calc(95% / 6); }
       `;
       const styleSheet = document.createElement("style");
       styleSheet.innerText = sizingStyles;
