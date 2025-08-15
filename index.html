@@ -1291,23 +1291,25 @@
 
           // This ONE listener handles clicks on the entire overlay
           fullscreenPreview.addEventListener('click', (event) => {
-              // Check if the click happened OUTSIDE of the action buttons area
+              // Check if the click happened OUTSIDE of the action buttons area.
+              // This works for the background, the content area, AND the image itself.
               if (!event.target.closest('#fullscreenActions')) {
-                  // If it did, toggle the visibility of the action buttons
                   fullscreenActions.classList.toggle('visible');
               }
           });
 
           // Listener for the "Save" button
           savePreviewBtn.addEventListener('click', (event) => {
-              event.stopPropagation(); // Stop the click from bubbling up to the overlay
+              // CRITICAL: Stop the click from bubbling up to the overlay
+              event.stopPropagation(); 
               savePoster();
               hidePreview();
           });
 
           // Listener for the "Close" button
           closePreviewBtn.addEventListener('click', (event) => {
-              event.stopPropagation(); // Stop the click from bubbling up to the overlay
+              // CRITICAL: Stop the click from bubbling up to the overlay
+              event.stopPropagation(); 
               hidePreview();
           });
       });
