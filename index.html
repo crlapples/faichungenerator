@@ -486,7 +486,7 @@
       }
       
       #textColorSelector.visible-flex {
-        max-height: 360px; /* Or a value large enough to fit the content */
+        max-height: 480px; /* Or a value large enough to fit the content */
         opacity: 1;
         margin-bottom: 1.5rem;
         pointer-events: auto;
@@ -756,6 +756,7 @@
                     <label class="background-choice" id="bgColorPickerLabel">
                         🎨
                         <input type="color" id="bgColorPickerInput" value="#dc2626">
+                        <div class="checkmark">✓</div>
                     </label>
                     <button class="confirm-button" id="bgConfirmBtn">Choose Color</button>
                 </div>
@@ -775,6 +776,7 @@
                     <label class="text-choice" id="textColorPickerLabel">
                         🎨
                         <input type="color" id="textColorPickerInput" value="#FDE047">
+                        <div class="checkmark">✓</div>
                     </label>
                     <button class="confirm-button" id="textConfirmBtn">Choose Color</button>
                 </div>
@@ -885,17 +887,16 @@
 
     <script>
       // --- STATE MANAGEMENT ---
-      // No colors are selected by default.
       let selectedBackgroundColor = null;
       let selectedTextColor = null;
       let isBgColorSelected = false;
       let isTextColorSelected = false;
+      let isTransparentMode = false; // <-- THIS WAS MISSING
       let paddingTop = 5;
       let paddingRight = 5;
       let paddingBottom = 5;
       let paddingLeft = 5;
       let characterSpacing = "none";
-      
       let characterMap = {};
 
       document.addEventListener('DOMContentLoaded', () => {
@@ -916,10 +917,21 @@
           const textColorPickerLabel = document.getElementById('textColorPickerLabel');
           const textConfirmBtn = document.getElementById('textConfirmBtn');
 
+          // Sliders and Value Displays
+          const paddingTopSlider = document.getElementById('paddingTop');
+          const paddingRightSlider = document.getElementById('paddingRight');
+          const paddingBottomSlider = document.getElementById('paddingBottom');
+          const paddingLeftSlider = document.getElementById('paddingLeft');
+          const paddingTopValue = document.getElementById('paddingTopValue');
+          const paddingRightValue = document.getElementById('paddingRightValue');
+          const paddingBottomValue = document.getElementById('paddingBottomValue');
+          const paddingLeftValue = document.getElementById('paddingLeftValue');
+
           function deselectAll(container) {
               container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
           }
 
+          // --- CORRECTED UI STATE CONTROLLER ---
           function checkUiState() {
               if (isBgColorSelected || isTransparentMode) {
                   textColorSelector.classList.remove('hidden');
@@ -957,12 +969,9 @@
               bgColorPickerLabel.style.backgroundColor = event.target.value;
           });
 
-          // --- CORRECTED LOGIC FOR THE CONFIRM BUTTON ---
           bgConfirmBtn.addEventListener('click', () => {
               deselectAll(bgChoicesContainer);
-              // CORRECTED: Add .selected directly to the label, which contains the checkmark
-              bgColorPickerLabel.classList.add('selected'); 
-              
+              bgColorPickerLabel.classList.add('selected');
               isTransparentMode = false;
               isBgColorSelected = true;
               selectedBackgroundColor = bgColorPickerInput.value;
@@ -984,25 +993,50 @@
               textColorPickerLabel.style.backgroundColor = event.target.value;
           });
 
-          // --- CORRECTED LOGIC FOR THE CONFIRM BUTTON ---
           textConfirmBtn.addEventListener('click', () => {
               deselectAll(textChoicesContainer);
-              // CORRECTED: Add .selected directly to the label
               textColorPickerLabel.classList.add('selected');
-              
               selectedTextColor = textColorPickerInput.value;
               isTextColorSelected = true;
               checkUiState();
           });
           
-          // Other event listeners
+          // --- SLIDER LISTENERS ---
+          paddingTopSlider.addEventListener('input', (event) => {
+              paddingTop = event.target.value;
+              paddingTopValue.textContent = `${event.target.value}%`;
+              generateFaiChun();
+          });
+          paddingRightSlider.addEventListener('input', (event) => {
+              paddingRight = event.target.value;
+              paddingRightValue.textContent = `${event.target.value}%`;
+              generateFaiChun();
+          });
+          paddingBottomSlider.addEventListener('input', (event) => {
+              paddingBottom = event.target.value;
+              paddingBottomValue.textContent = `${event.target.value}%`;
+              generateFaiChun();
+          });
+          paddingLeftSlider.addEventListener('input', (event) => {
+              paddingLeft = event.target.value;
+              paddingLeftValue.textContent = `${event.target.value}%`;
+              generateFaiChun();
+          });
+
+          // --- SPACING LISTENER ---
+          document.getElementById('spacingSelector').addEventListener('change', (event) => {
+              characterSpacing = event.target.value;
+              generateFaiChun();
+          });
+
+          // --- ORIENTATION/DIRECTION LISTENERS ---
           document.getElementById('orientationSelector').addEventListener('change', generateFaiChun);
           document.getElementById('directionSelector').addEventListener('change', generateFaiChun);
       });
 
+      // --- CORRECTED GENERATION FUNCTION ---
       function generateFaiChun() {
-        // Only run if both colors have been chosen and the map is loaded.
-        if (!isBgColorSelected || !isTextColorSelected || Object.keys(characterMap).length === 0) {
+        if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) {
             return;
         }
 
@@ -1022,18 +1056,22 @@
         let faiChunClass = `fai-chun ${orientation}`;
         if (orientation === 'horizontal') faiChunClass += ` ${direction}`;
         faiChunContainer.className = faiChunClass;
-        faiChunContainer.style.backgroundColor = selectedBackgroundColor;
+        
+        // --- THIS LOGIC WAS MISSING ---
+        faiChunContainer.classList.remove('fai-chun-transparent'); // Always reset
+        if (isTransparentMode) {
+            faiChunContainer.classList.add('fai-chun-transparent');
+        } else {
+            faiChunContainer.style.backgroundColor = selectedBackgroundColor;
+        }
         
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
         imageContainer.classList.add(`char-count-${characterCount}`);
         imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
 
-        // --- THIS IS THE KEY LOGIC CHANGE ---
-        let finalGapValue = "0"; // Default to no gap
-
+        let finalGapValue = "0";
         if (orientation === 'vertical') {
-            // Use larger values for vertical spacing, relative to character height
             switch (characterSpacing) {
                 case 'quarter': finalGapValue = '0.5rem'; break;
                 case 'third':   finalGapValue = '0.7rem'; break;
@@ -1041,8 +1079,7 @@
                 case 'full':    finalGapValue = '2rem'; break;
                 default:        finalGapValue = '0'; break;
             }
-        } else { // Horizontal orientation
-            // Use smaller values for horizontal spacing, relative to character width
+        } else {
             switch (characterSpacing) {
                 case 'quarter': finalGapValue = '0.25rem'; break;
                 case 'third':   finalGapValue = '0.35rem'; break;
@@ -1052,7 +1089,6 @@
             }
         }
         imageContainer.style.gap = finalGapValue;
-        // --- END OF CHANGE ---
 
         const characters = textInput.split('');
         characters.forEach(char => {
@@ -1078,11 +1114,31 @@
       }
 
       // Your modal and save functions remain the same
-      function showSaveModal() { /* ... */ }
-      function hideSaveModal() { /* ... */ }
-      function savePoster() { /* ... */ }
+      function showSaveModal() {
+        document.getElementById('modalOverlay').classList.add('visible');
+      }
+      function hideSaveModal() {
+        document.getElementById('modalOverlay').classList.remove('visible');
+      }
+      function savePoster() {
+        const poster = document.querySelector('.fai-chun');
+        if (!poster) return;
+
+        html2canvas(poster, {
+            useCORS: true,
+            scale: 2,
+            backgroundColor: null
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'fai-chun.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }).catch(err => {
+            console.error("Oops, something went wrong during save!", err);
+            alert("Sorry, the image could not be saved.");
+        });
+      }
       
-      // We also still need the sizing styles injected by JavaScript
       const sizingStyles = `
         .char-wrapper { width: 90%; height: calc(95% / 7); }
         .fai-chun.horizontal .char-wrapper { width: calc(95% / 7); height: 90%; }
