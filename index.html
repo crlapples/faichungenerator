@@ -488,8 +488,8 @@
       #textColorSelector.visible-flex {
         max-height: 480px; /* Or a value large enough to fit the content */
         opacity: 1;
-        margin-bottom: 1.5rem;
         pointer-events: auto;
+        overflow: visible;
       }
 
       /* Special class for the text selector to make it display correctly when visible */
@@ -548,6 +548,12 @@
         justify-content: center;
         font-size: 2.5rem;
         background-color: #f3f4f6;
+      }
+            /* FIX #1: ADD THIS MISSING CSS CLASS */
+      .fai-chun-transparent {
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
       }
 
 
@@ -1064,6 +1070,8 @@
         } else {
             faiChunContainer.style.backgroundColor = selectedBackgroundColor;
         }
+
+        faiChunContainer.onclick = showSaveModal;
         
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
