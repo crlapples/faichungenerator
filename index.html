@@ -426,14 +426,51 @@
         background-color: #f3f4f6;
       }
 
-      /* --- THE MAGIC: DYNAMIC IMAGE COLORING --- */
-      .fai-chun-text img {
-        /* This filter colors our WHITE source images.
-           It creates a drop-shadow with 0 blur and 0 offset,
-           using the color from our CSS variable. */
-        filter: drop-shadow(0 0 0 var(--character-color, #000000));
-        /* We need to push the image itself way off screen so we only see the shadow */
-        transform: translateX(-9999px);
+      /* This fixes the vertical layout issue */
+      #backgroundChoices, #textColorChoices {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1rem;
+      }
+      
+      .picker-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      
+      .confirm-button {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: #374151;
+        background-color: #f3f4f6;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+      .confirm-button:hover {
+        background-color: #e5e7eb;
+      }
+
+      /* --- THE NEW, BETTER MAGIC: MASK-IMAGE COLORING --- */
+      .fai-chun-char {
+        /* Use the character PNG as a mask */
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        
+        /* The background color of this div will show through the mask,
+           effectively coloring the character. */
+        background-color: var(--character-color, #000000);
+        
+        width: 100%;
+        height: 100%;
       }
 
 
@@ -545,6 +582,7 @@
       <h1 class="title">Custom Fai Chun</h1>
 
             <!-- New container for both selectors -->
+            <!-- New container for both selectors -->
       <div id="styleSelectors">
         
         <!-- Background Color Selector -->
@@ -556,11 +594,13 @@
                     <div class="checkmark">✓</div>
                 </div>
                 <!-- The User Color Picker for Background -->
-                <label class="background-choice" id="bgColorPickerLabel">
-                    🎨
-                    <input type="color" id="bgColorPickerInput" value="#dc2626">
-                    <div class="checkmark">✓</div>
-                </label>
+                <div class="picker-container">
+                    <label class="background-choice" id="bgColorPickerLabel">
+                        🎨
+                        <input type="color" id="bgColorPickerInput" value="#dc2626">
+                    </label>
+                    <button class="confirm-button" id="bgConfirmBtn">OK</button>
+                </div>
             </div>
         </div>
 
@@ -573,11 +613,13 @@
                     <div class="checkmark">✓</div>
                 </div>
                 <!-- The User Color Picker for Text -->
-                <label class="text-choice" id="textColorPickerLabel">
-                    🎨
-                    <input type="color" id="textColorPickerInput" value="#FDE047">
-                    <div class="checkmark">✓</div>
-                </label>
+                <div class="picker-container">
+                    <label class="text-choice" id="textColorPickerLabel">
+                        🎨
+                        <input type="color" id="textColorPickerInput" value="#FDE047">
+                    </label>
+                    <button class="confirm-button" id="textConfirmBtn">OK</button>
+                </div>
             </div>
         </div>
 
@@ -626,39 +668,29 @@
 
     <script>
       let selectedBackgroundColor = "#FFFFFF";
-      let selectedTextColor = "#000000"; // Default text color is now black
-      let characterMap = {}; // Will hold our character-to-filename map
-
-      // --- This addresses your "confirm button" request ---
-      // The 'change' event fires only when the user CLOSES the color picker.
-      // This acts as a natural "confirm" and is standard web behavior.
-      // It prevents the Fai Chun from re-rendering hundreds of times as they drag the color selector.
+      let selectedTextColor = "#000000";
+      let characterMap = {};
 
       document.addEventListener('DOMContentLoaded', () => {
-          // --- Load the character map - THIS FIXES THE MISSING IMAGES ---
           fetch('character_map.json')
               .then(response => response.json())
-              .then(data => {
-                  characterMap = data;
-                  console.log("Character map loaded successfully!");
-              })
+              .then(data => { characterMap = data; console.log("Character map loaded!"); })
               .catch(error => console.error("Error loading character map:", error));
 
-          // --- Get all the new HTML elements ---
-          const inputSection = document.getElementById('inputSection');
           const posterContainer = document.getElementById('posterContainer');
-
+          
           // Background Elements
           const bgChoicesContainer = document.getElementById('backgroundChoices');
           const bgColorPickerInput = document.getElementById('bgColorPickerInput');
           const bgColorPickerLabel = document.getElementById('bgColorPickerLabel');
+          const bgConfirmBtn = document.getElementById('bgConfirmBtn');
 
           // Text Color Elements
           const textChoicesContainer = document.getElementById('textColorChoices');
           const textColorPickerInput = document.getElementById('textColorPickerInput');
           const textColorPickerLabel = document.getElementById('textColorPickerLabel');
+          const textConfirmBtn = document.getElementById('textConfirmBtn');
 
-          // Helper function to deselect all items in a container
           function deselectAll(container) {
               container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
           }
@@ -666,19 +698,22 @@
           // --- EVENT LISTENERS FOR BACKGROUND COLOR ---
           bgChoicesContainer.addEventListener('click', (event) => {
               const choice = event.target.closest('.background-choice[data-color]');
-              if (!choice) return; // Exit if not a preset swatch
-              
+              if (!choice) return;
               deselectAll(bgChoicesContainer);
               choice.classList.add('selected');
               selectedBackgroundColor = choice.getAttribute('data-color');
               updateFaiChunStyle();
           });
 
-          bgColorPickerInput.addEventListener('change', (event) => {
+          bgColorPickerInput.addEventListener('input', (event) => {
+              // Live preview the color on the swatch only
+              bgColorPickerLabel.style.backgroundColor = event.target.value;
+          });
+
+          bgConfirmBtn.addEventListener('click', () => {
               deselectAll(bgChoicesContainer);
               bgColorPickerLabel.classList.add('selected');
-              selectedBackgroundColor = event.target.value;
-              bgColorPickerLabel.style.backgroundColor = selectedBackgroundColor;
+              selectedBackgroundColor = bgColorPickerInput.value;
               updateFaiChunStyle();
           });
           
@@ -686,54 +721,44 @@
           textChoicesContainer.addEventListener('click', (event) => {
               const choice = event.target.closest('.text-choice[data-color]');
               if (!choice) return;
-
               deselectAll(textChoicesContainer);
               choice.classList.add('selected');
               selectedTextColor = choice.getAttribute('data-color');
               updateFaiChunStyle();
           });
+          
+          textColorPickerInput.addEventListener('input', (event) => {
+              // Live preview the color on the swatch only
+              textColorPickerLabel.style.backgroundColor = event.target.value;
+          });
 
-          textColorPickerInput.addEventListener('change', (event) => {
+          textConfirmBtn.addEventListener('click', () => {
               deselectAll(textChoicesContainer);
               textColorPickerLabel.classList.add('selected');
-              selectedTextColor = event.target.value;
-              textColorPickerLabel.style.backgroundColor = selectedTextColor;
+              selectedTextColor = textColorPickerInput.value;
               updateFaiChunStyle();
           });
 
-          // A single function to update the Fai Chun's colors
           function updateFaiChunStyle() {
-              const existingFaiChun = posterContainer.querySelector('.fai-chun');
-              if (existingFaiChun) {
-                  existingFaiChun.style.backgroundColor = selectedBackgroundColor;
-                  // Set the CSS variable that the filter uses
-                  existingFaiChun.style.setProperty('--character-color', selectedTextColor);
-              }
-              // If text is already entered, regenerate to apply changes
               if (document.getElementById('chineseText').value.trim()) {
                   generateFaiChun();
               }
           }
           
-          // Initial selection setup
+          // Set initial defaults
           bgChoicesContainer.querySelector('.background-choice').classList.add('selected');
           textChoicesContainer.querySelector('.text-choice').classList.add('selected');
-          inputSection.classList.add('visible'); // Start with the input section visible
-
-          // --- Other existing event listeners ---
-          document.querySelector('input[name="orientation"]').addEventListener('change', () => generateFaiChun());
-          document.querySelector('input[name="direction"]').addEventListener('change', () => generateFaiChun());
+          
+          document.querySelector('input[name="orientation"]').addEventListener('change', generateFaiChun);
+          document.querySelector('input[name="direction"]').addEventListener('change', generateFaiChun);
       });
 
       function generateFaiChun() {
-        if (Object.keys(characterMap).length === 0) {
-            console.warn("Character map not loaded yet, please wait.");
-            return;
-        }
+        if (Object.keys(characterMap).length === 0) return;
+
         let textInput = document.getElementById('chineseText').value.trim();
         const characterCount = textInput.length;
         const posterContainer = document.getElementById('posterContainer');
-        const maxLength = 7;
         const orientation = document.querySelector('input[name="orientation"]:checked').value;
         const direction = document.querySelector('input[name="direction"]:checked').value;
 
@@ -743,16 +768,12 @@
         }
 
         posterContainer.innerHTML = '';
-        
         const faiChunContainer = document.createElement('div');
         let faiChunClass = `fai-chun ${orientation}`;
         if (orientation === 'horizontal') faiChunClass += ` ${direction}`;
         faiChunContainer.className = faiChunClass;
-        
-        // --- KEY CHANGE: Set background and text color directly ---
         faiChunContainer.style.backgroundColor = selectedBackgroundColor;
-        faiChunContainer.style.setProperty('--character-color', selectedTextColor);
-        faiChunContainer.onclick = showSaveModal; // Assuming you have this function
+        // We no longer need to set a CSS variable here.
 
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
@@ -760,28 +781,66 @@
 
         const characters = textInput.split('');
         characters.forEach(char => {
-            const img = document.createElement('img');
-            img.alt = char;
-
-            // --- THIS FIXES YOUR MISSING IMAGES ---
             const filename = characterMap[char];
             if (filename) {
-                img.src = `processed_web_characters/${filename}`;
-            } else {
-                console.warn(`Image for character "${char}" not found in map.`);
-                img.style.display = 'none';
+                // --- THIS IS THE KEY CHANGE ---
+                // Instead of an <img>, we create a <div> and apply the mask.
+                const charDiv = document.createElement('div');
+                charDiv.className = 'fai-chun-char';
+                
+                const imageUrl = `processed_web_characters/${filename}`;
+                charDiv.style.webkitMaskImage = `url(${imageUrl})`;
+                charDiv.style.maskImage = `url(${imageUrl})`;
+                charDiv.style.backgroundColor = selectedTextColor; // The color comes from here!
+
+                // This outer div is for sizing and spacing
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.className = 'char-wrapper'; // You will style this
+                wrapperDiv.appendChild(charDiv);
+                
+                imageContainer.appendChild(wrapperDiv);
             }
-            imageContainer.appendChild(img);
         });
 
         faiChunContainer.appendChild(imageContainer);
         posterContainer.appendChild(faiChunContainer);
       }
 
-      // Your modal and save functions (showSaveModal, hideSaveModal, savePoster) should remain here
+      // Add sizing CSS for the new .char-wrapper div.
+      // We need to replace the old `.fai-chun-text img` rules.
+      // Find the "Dynamic Sizing Rules" in your CSS and replace them with this:
+      const sizingStyles = `
+        .char-wrapper {
+            flex-shrink: 0;
+            width: 90%;
+            height: calc(95% / 7);
+        }
+        .fai-chun.horizontal .char-wrapper {
+            width: calc(95% / 7);
+            height: 90%;
+        }
+        .char-count-1 .char-wrapper { height: 65%; }
+        .fai-chun.horizontal .char-count-1 .char-wrapper { width: 50%; }
+        .char-count-2 .char-wrapper { height: calc(80% / 2); }
+        .fai-chun.horizontal .char-count-2 .char-wrapper { width: calc(80% / 2); }
+        .char-count-3 .char-wrapper { height: calc(90% / 3); }
+        .fai-chun.horizontal .char-count-3 .char-wrapper { width: calc(90% / 3); }
+        .char-count-4 .char-wrapper { height: calc(95% / 4); }
+        .fai-chun.horizontal .char-count-4 .char-wrapper { width: calc(95% / 4); }
+        .char-count-5 .char-wrapper { height: calc(95% / 5); }
+        .fai-chun.horizontal .char-count-5 .char-wrapper { width: calc(95% / 5); }
+        .char-count-6 .char-wrapper { height: calc(95% / 6); }
+        .fai-chun.horizontal .char-count-6 .char-wrapper { width: calc(95% / 6); }
+      `;
+      const styleSheet = document.createElement("style");
+      styleSheet.innerText = sizingStyles;
+      document.head.appendChild(styleSheet);
+
+      // Your modal and save functions should remain here
       function showSaveModal() { /* ... */ }
       function hideSaveModal() { /* ... */ }
       function savePoster() { /* ... */ }
+
     </script>
 
     <div id="modalOverlay">
