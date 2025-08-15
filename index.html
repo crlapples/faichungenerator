@@ -538,6 +538,10 @@
         color: #1f2937; /* Darker text for better visibility */
       }
 
+      #spacingSelector {
+        margin-bottom: 3rem;
+      }
+
 
       /* --- NEW ---: Responsive styles for mobile and tablet */
       @media (max-width: 768px) {
@@ -574,6 +578,10 @@
         }
         .padding-slider {
           font-size: 0.85rem; /* Make the labels a bit smaller */
+        }
+                /* --- Tablet Style for Spacing Selector --- */
+        #spacingSelector .radio-group {
+          gap: 1.25rem;
         }
       }
       @media (max-width: 480px) {
@@ -693,6 +701,11 @@
         .padding-slider {
           font-size: 0.9rem;
         }
+                /* --- Mobile Style for Spacing Selector --- */
+        #spacingSelector .radio-group {
+          flex-wrap: wrap; /* Allow buttons to wrap to the next line */
+          gap: 0.5rem 1rem;  /* Adjust row and column gap */
+        }
       }
     </style>
 </head>
@@ -715,7 +728,6 @@
     <div class="generator-container">
       <h1 class="title">Custom Fai Chun</h1>
 
-            <!-- New container for both selectors -->
             <!-- New container for both selectors -->
       <div id="styleSelectors">
         
@@ -783,7 +795,7 @@
         </div>
 
         <div id="paddingControls">
-            <p class="tooltip">Character Margins (%)</p>
+            <p class="tooltip">Poster Margins (%)</p>
             <div class="padding-grid">
                 <!-- Top Slider -->
                 <div class="padding-slider">
@@ -820,6 +832,24 @@
             </div>
         </div>
 
+        <div id="spacingSelector">
+            <p class="tooltip">Character Spacing</p>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="spacing" value="0" checked> Normal
+                </label>
+                <label>
+                    <input type="radio" name="spacing" value="0.25em"> ¼ Char
+                </label>
+                <label>
+                    <input type="radio" name="spacing" value="0.5em"> ½ Char
+                </label>
+                <label>
+                    <input type="radio" name="spacing" value="1em"> 1 Char
+                </label>
+            </div>
+        </div>
+
         <p class="tooltip">Chinese Word(s) or Phrase/Idiom</p>
         <input
           type="text"
@@ -849,6 +879,7 @@
       let paddingRight = 5;
       let paddingBottom = 5;
       let paddingLeft = 5;
+      let characterSpacing = "0";
       
       let characterMap = {};
 
@@ -908,6 +939,13 @@
               paddingLeft = value;
               paddingLeftValue.textContent = `${value}%`; // Update the indicator
               generateFaiChun();
+          });
+
+          const spacingSelector = document.getElementById('spacingSelector');
+          spacingSelector.addEventListener('change', (event) => {
+              // Update the state variable with the selected value (e.g., "0.5em")
+              characterSpacing = event.target.value;
+              generateFaiChun(); // Re-render with the new spacing
           });
 
           function deselectAll(container) {
@@ -1021,6 +1059,8 @@
         imageContainer.classList.add(`char-count-${characterCount}`);
 
         imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
+
+        imageContainer.style.gap = characterSpacing;
 
         const characters = textInput.split('');
         characters.forEach(char => {
