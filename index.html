@@ -1410,12 +1410,7 @@
                 wrapperDiv.className = 'char-wrapper';
 
                 if (orientation === 'vertical' && characters.length > 0) {
-                    // Calculate the available height after padding is removed.
-                    const availableHeight = 100 - paddingTop - paddingBottom;
-                    // Divide that height evenly among all characters.
-                    const charHeight = availableHeight / characters.length;
-                    // Apply this as an inline style to override CSS.
-                    wrapperDiv.style.height = charHeight + '%';
+                    wrapperDiv.style.height = '10%';
                     // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
                     wrapperDiv.style.flexShrink = '0';
                 } else {
