@@ -618,20 +618,29 @@
 
 
       #fullscreenActions {
-        flex-shrink: 0; /* Prevent the actions container from shrinking */
-        padding-top: 2vh; /* Give it some space from the content above */
+        position: absolute;
+        top: 50%;
+        left: 50%;
         display: flex;
+        flex-direction: column; /* Stack buttons vertically */
         gap: 1rem;
+        padding: 1.5rem; /* More padding */
+        background-color: rgba(40, 40, 40, 0.8); /* Darker, more solid background */
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 16px;
         opacity: 0;
         pointer-events: none;
-        transform: translateY(20px);
+        /* Start centered, but scaled down and slightly lower */
+        transform: translate(-50%, -50%) scale(0.9) translateY(20px);
         transition: opacity 0.3s ease, transform 0.3s ease;
+        cursor: default;
       }
 
       #fullscreenActions.visible {
         opacity: 1;
         pointer-events: auto;
-        transform: translateY(0);
+        /* End centered and at full scale */
+        transform: translate(-50%, -50%) scale(1) translateY(0);
       }
       
       /* Make the buttons larger and easier to click */
