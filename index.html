@@ -566,29 +566,27 @@
         overflow: hidden;
       }
 
-            /* --- NEW: Styles for Fullscreen Preview --- */
+            /* --- NEW: Styles for Fullscreen Preview (REVISED) --- */
       #fullscreenPreview {
-        position: fixed; /* Position relative to the viewport */
+        position: fixed;
         top: 0;
         left: 0;
-        width: 100vw; /* 100% of viewport width */
-        height: 100vh; /* 100% of viewport height */
-        background-color: rgba(0, 0, 0, 0.85); /* Semi-transparent black background */
-        z-index: 2000; /* Ensure it's on top of everything */
-        display: none; /* Hidden by default */
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.85);
+        z-index: 2000;
+        display: none;
         align-items: center;
         justify-content: center;
         padding: 1rem;
         box-sizing: border-box;
       }
 
-      /* This class will be toggled by JavaScript to show the overlay */
       #fullscreenPreview.visible {
         display: flex;
       }
 
       #fullscreenContent {
-        /* This ensures the cloned image is large but never overflows the screen */
         max-width: 95vw;
         max-height: 95vh;
         display: flex;
@@ -596,12 +594,23 @@
         justify-content: center;
       }
       
-      /* Make the cloned element's dimensions work within the container */
+      /* --- This is the key fix for scaling --- */
+      /* Make the cloned element responsive */
       #fullscreenContent .fai-chun {
         width: auto;
         height: auto;
         max-width: 100%;
-        max-height: 95vh; /* Give it a max-height to respect its container */
+        max-height: 100%;
+      }
+      /* Preserve aspect ratio for vertical clones */
+      #fullscreenContent .fai-chun.vertical {
+        height: 95vh; /* Let height be the limiting factor */
+        aspect-ratio: 16 / 36; /* Original dimensions: 16rem / 36rem */
+      }
+      /* Preserve aspect ratio for horizontal clones */
+      #fullscreenContent .fai-chun.horizontal {
+        width: 95vw; /* Let width be the limiting factor */
+        aspect-ratio: 36 / 10; /* Original dimensions: 36rem / 10rem */
       }
 
       #closeFullscreen {
@@ -953,7 +962,7 @@
           placeholder="Enter up to 7 characters"
         >
         <button
-          onclick="generateFaiChun()"
+          id="createBtn"
           class="generate-button"
         >
           Create
@@ -1064,28 +1073,19 @@
           }
       }
 
-      document.addEventListener('DOMContentLoaded', () => {
-          fetch('character_map.json')
-              .then(response => response.json())
-              .then(data => { characterMap = data; console.log("Character map loaded!"); })
-              .catch(error => console.error("Error loading character map:", error));
-
+            document.addEventListener('DOMContentLoaded', () => {
           // --- Get all UI elements ---
           const textColorSelector = document.getElementById('textColorSelector');
           const inputSection = document.getElementById('inputSection');
           const bgChoicesContainer = document.getElementById('backgroundChoices');
           const bgColorPickerInput = document.getElementById('bgColorPickerInput');
           const bgColorPickerLabel = document.getElementById('bgColorPickerLabel');
-          const bgConfirmBtn = document.getElementById('bgConfirmBtn');
           const textChoicesContainer = document.getElementById('textColorChoices');
           const textColorPickerInput = document.getElementById('textColorPickerInput');
           const textColorPickerLabel = document.getElementById('textColorPickerLabel');
-          const textConfirmBtn = document.getElementById('textConfirmBtn');
           const orientationRadios = document.querySelectorAll('input[name="orientation"]');
           const directionSelector = document.getElementById('directionSelector');
           const chineseTextInput = document.getElementById('chineseText');
-
-          // Sliders and Value Displays
           const paddingTopSlider = document.getElementById('paddingTop');
           const paddingRightSlider = document.getElementById('paddingRight');
           const paddingBottomSlider = document.getElementById('paddingBottom');
@@ -1094,16 +1094,21 @@
           const paddingRightValue = document.getElementById('paddingRightValue');
           const paddingBottomValue = document.getElementById('paddingBottomValue');
           const paddingLeftValue = document.getElementById('paddingLeftValue');
-
+          const modalOverlay = document.getElementById('modalOverlay');
+          const confirmSaveButton = document.getElementById('confirmSaveButton');
+          const cancelButton = document.getElementById('cancelButton');
+          
+          // --- NEW/FIXED Elements ---
+          const createBtn = document.getElementById('createBtn');
           const fullscreenPreview = document.getElementById('fullscreenPreview');
           const fullscreenContent = document.getElementById('fullscreenContent');
           const closeFullscreen = document.getElementById('closeFullscreen');
 
+          // --- Helper Functions ---
           function deselectAll(container) {
               container.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
           }
 
-          // --- UI STATE CONTROLLER ---
           function checkUiState() {
               if (isBgColorSelected || isTransparentMode) {
                   textColorSelector.classList.remove('hidden');
@@ -1113,20 +1118,116 @@
                   inputSection.classList.add('visible');
               }
           }
-          
-          // --- EVENT LISTENER FOR TEXT INPUT (Enter Key) ---
-          chineseTextInput.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault(); // Prevent form submission if it's in a form
-              generateFaiChun();
-            }
-          });
 
+          // --- Main Function (MOVED INSIDE) ---
+          // This function is now inside the listener, so it can see all the variables above
+          async function generateFaiChun(showPreview = false) {
+              if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) return;
 
-          // --- EVENT LISTENERS FOR BACKGROUND COLOR ---
+              let textInput = document.getElementById('chineseText').value.trim();
+              const posterContainer = document.getElementById('posterContainer');
+              const orientation = document.querySelector('input[name="orientation"]:checked').value;
+              
+              if (!textInput) { 
+                  posterContainer.innerHTML = ''; 
+                  return; 
+              }
+
+              posterContainer.innerHTML = '';
+              
+              const faiChunContainer = document.createElement('div');
+              const imageContainer = document.createElement('div');
+              imageContainer.className = 'fai-chun-text';
+              
+              faiChunContainer.appendChild(imageContainer);
+              posterContainer.appendChild(faiChunContainer);
+              faiChunContainer.onclick = showSaveModal;
+
+              let faiChunClass = `fai-chun ${orientation}`;
+              if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
+              faiChunContainer.className = faiChunClass;
+
+              if (isTransparentMode) {
+                  faiChunContainer.classList.add('fai-chun-transparent');
+              } else {
+                  faiChunContainer.style.backgroundColor = selectedBackgroundColor;
+              }
+
+              imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
+              imageContainer.style.justifyContent = 'space-evenly';
+
+              let finalGapValue = "0";
+              if (orientation === 'horizontal') {
+                   switch (characterSpacing) {
+                      case 'none':    finalGapValue = '1rem'; break;
+                      case 'quarter': finalGapValue = '1.5vw'; break;
+                      case 'third':   finalGapValue = '2vw'; break;
+                      case 'half':    finalGapValue = '3vw'; break;
+                      case 'full':    finalGapValue = '5vw'; break;
+                  }
+              } else {
+                  switch (characterSpacing) {
+                      case 'none':    finalGapValue = '1rem'; break;
+                      case 'quarter': finalGapValue = '1.5vh'; break;
+                      case 'third':   finalGapValue = '2vh'; break;
+                      case 'half':    finalGapValue = '3vh'; break;
+                      case 'full':    finalGapValue = '5vh'; break;
+                  }
+              }
+              imageContainer.style.gap = finalGapValue;
+              
+              const characters = textInput.split('');
+              for (const char of characters) {
+                  try {
+                      const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
+                      const img = document.createElement('img');
+                      img.src = coloredImageDataUrl;
+                      const wrapperDiv = document.createElement('div');
+                      wrapperDiv.className = 'char-wrapper';
+
+                      if (orientation === 'vertical' && characters.length > 0) {
+                          const availableHeight = 100 - paddingTop - paddingBottom;
+                          const charHeight = availableHeight / characters.length;
+                          wrapperDiv.style.height = charHeight + '%';
+                          wrapperDiv.style.flexShrink = '0';
+                      } else {
+                          wrapperDiv.style.height = '95%';
+                          wrapperDiv.style.aspectRatio = '1 / 1';
+                      }
+
+                      wrapperDiv.appendChild(img);
+                      imageContainer.appendChild(wrapperDiv);
+                  } catch (error) {
+                      console.error("Failed to create colored character:", error);
+                  }
+              }
+              
+              if (!showPreview) {
+                setTimeout(() => smoothScrollTo(posterContainer), 50);
+              }
+
+              // Fullscreen preview logic
+              if (showPreview) {
+                  const posterElement = posterContainer.querySelector('.fai-chun');
+                  if (posterElement) {
+                      fullscreenContent.innerHTML = '';
+                      const clone = posterElement.cloneNode(true);
+                      clone.onclick = null;
+                      fullscreenContent.appendChild(clone);
+                      fullscreenPreview.classList.add('visible');
+                  }
+              }
+          }
+
+          // --- EVENT LISTENERS ---
+
+          // FIX: New listener for the "Create" button
+          createBtn.addEventListener('click', () => generateFaiChun(true));
+
+          // --- Background Color Listeners (FIXED) ---
           bgChoicesContainer.addEventListener('click', (event) => {
               const choice = event.target.closest('.background-choice');
-              if (!choice) return;
+              if (!choice || choice.id === 'bgColorPickerLabel') return; // Ignore clicks on the palette label itself
               deselectAll(bgChoicesContainer);
               choice.classList.add('selected');
 
@@ -1144,22 +1245,29 @@
               setTimeout(() => smoothScrollTo(textColorSelector), 200);
           });
 
-          // Add this new event listener for the background palette label
-            bgColorPickerLabel.addEventListener('click', () => {
-                // This logic runs instantly when you click the 🎨 icon
-                deselectAll(bgChoicesContainer);
-                bgColorPickerLabel.classList.add('selected');
-                isTransparentMode = false;
-                isBgColorSelected = true;
-                selectedBackgroundColor = bgColorPickerInput.value; // Use the input's current color
-                checkUiState();
-                generateFaiChun();
-            });
+          // FIX: Palette click now instantly selects and updates
+          bgColorPickerLabel.addEventListener('click', () => {
+              deselectAll(bgChoicesContainer);
+              bgColorPickerLabel.classList.add('selected');
+              bgColorPickerLabel.style.backgroundColor = bgColorPickerInput.value; // Instantly update palette color
+              isTransparentMode = false;
+              isBgColorSelected = true;
+              selectedBackgroundColor = bgColorPickerInput.value;
+              checkUiState();
+              generateFaiChun();
+          });
+
+          // FIX: Palette input provides a live preview
+          bgColorPickerInput.addEventListener('input', (event) => {
+              bgColorPickerLabel.style.backgroundColor = event.target.value;
+              selectedBackgroundColor = event.target.value;
+              generateFaiChun();
+          });
           
-          // --- EVENT LISTENERS FOR TEXT COLOR ---
+          // --- Text Color Listeners (FIXED) ---
           textChoicesContainer.addEventListener('click', (event) => {
               const choice = event.target.closest('.text-choice');
-              if (!choice) return;
+              if (!choice || choice.id === 'textColorPickerLabel') return;
               deselectAll(textChoicesContainer);
               choice.classList.add('selected');
               selectedTextColor = choice.getAttribute('data-color');
@@ -1169,215 +1277,80 @@
               setTimeout(() => smoothScrollTo(inputSection), 200);
           });
 
-          // Replace this...
-            textColorPickerInput.addEventListener('input', (event) => {
-                textColorPickerLabel.style.backgroundColor = event.target.value;
-            });
-
-            // ...with this new version
-            textColorPickerInput.addEventListener('input', (event) => {
-                // Update the swatch color preview
-                textColorPickerLabel.style.backgroundColor = event.target.value;
-                // Run the full selection and update logic for a live preview
-                selectedTextColor = event.target.value;
-                generateFaiChun();
-            });
-
-          textConfirmBtn.addEventListener('click', () => {
+          // FIX: Palette click now instantly selects and updates
+          textColorPickerLabel.addEventListener('click', () => {
               deselectAll(textChoicesContainer);
               textColorPickerLabel.classList.add('selected');
-              selectedTextColor = textColorPickerInput.value;
+              textColorPickerLabel.style.backgroundColor = textColorPickerInput.value; // Instantly update palette color
               isTextColorSelected = true;
+              selectedTextColor = textColorPickerInput.value;
               checkUiState();
               generateFaiChun();
-              setTimeout(() => smoothScrollTo(inputSection), 200);
+          });
+
+          // FIX: Palette input provides a live preview
+          textColorPickerInput.addEventListener('input', (event) => {
+              textColorPickerLabel.style.backgroundColor = event.target.value;
+              selectedTextColor = event.target.value;
+              generateFaiChun();
           });
           
-          // --- SLIDER LISTENERS ---
+          // --- Other Listeners ---
+          chineseTextInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              generateFaiChun(true); // Also show preview on Enter
+            }
+          });
+
           paddingTopSlider.addEventListener('input', (event) => {
-              paddingTop = event.target.value;
+              paddingTop = Number(event.target.value);
               paddingTopValue.textContent = `${event.target.value}%`;
               generateFaiChun();
           });
           paddingRightSlider.addEventListener('input', (event) => {
-              paddingRight = event.target.value;
+              paddingRight = Number(event.target.value);
               paddingRightValue.textContent = `${event.target.value}%`;
               generateFaiChun();
           });
           paddingBottomSlider.addEventListener('input', (event) => {
-              paddingBottom = event.target.value;
+              paddingBottom = Number(event.target.value);
               paddingBottomValue.textContent = `${event.target.value}%`;
               generateFaiChun();
           });
           paddingLeftSlider.addEventListener('input', (event) => {
-              paddingLeft = event.target.value;
+              paddingLeft = Number(event.target.value);
               paddingLeftValue.textContent = `${event.target.value}%`;
               generateFaiChun();
           });
 
-          // --- SPACING LISTENER ---
-          document.getElementById('spacingSelector').addEventListener('change', (event) => {
-              characterSpacing = event.target.value;
-              generateFaiChun();
-          });
-
-          // --- ORIENTATION/DIRECTION LISTENERS ---
-          document.getElementById('orientationSelector').addEventListener('change', generateFaiChun);
-          document.getElementById('directionSelector').addEventListener('change', generateFaiChun);
+          document.getElementById('spacingSelector').addEventListener('change', () => generateFaiChun());
+          document.getElementById('orientationSelector').addEventListener('change', () => generateFaiChun());
+          document.getElementById('directionSelector').addEventListener('change', () => generateFaiChun());
 
           orientationRadios.forEach(radio => {
               radio.addEventListener('change', (event) => {
-                  if (event.target.value === 'horizontal') {
-                      directionSelector.style.display = 'block';
-                  } else {
-                      directionSelector.style.display = 'none';
-                  }
+                  directionSelector.style.display = (event.target.value === 'horizontal') ? 'block' : 'none';
               });
           });
-
-          // --- MODAL DIALOG LISTENERS ---
-          const modalOverlay = document.getElementById('modalOverlay');
-          const confirmSaveButton = document.getElementById('confirmSaveButton');
-          const cancelButton = document.getElementById('cancelButton');
 
           confirmSaveButton.addEventListener('click', savePoster);
           cancelButton.addEventListener('click', hideSaveModal);
           modalOverlay.addEventListener('click', (event) => {
-              if (event.target === modalOverlay) {
-                  hideSaveModal();
-              }
+              if (event.target === modalOverlay) hideSaveModal();
           });
+
+          // FIX: Listeners for closing the fullscreen preview
           closeFullscreen.addEventListener('click', () => {
               fullscreenPreview.classList.remove('visible');
           });
 
-          // Optional: Also close the preview by clicking the dark background
           fullscreenPreview.addEventListener('click', (event) => {
               if (event.target === fullscreenPreview) {
                   fullscreenPreview.classList.remove('visible');
               }
           });
       });
-
-            // --- Replace your entire old function with this new, corrected version ---
-      async function generateFaiChun() {
-        // Guard clause: Don't run if colors aren't selected or the map isn't loaded.
-        if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) return;
-
-        // Get current settings from the UI
-        let textInput = document.getElementById('chineseText').value.trim();
-        const posterContainer = document.getElementById('posterContainer');
-        const orientation = document.querySelector('input[name="orientation"]:checked').value;
-        
-        // If there's no text, clear the poster and stop.
-        if (!textInput) { 
-            posterContainer.innerHTML = ''; 
-            return; 
-        }
-
-        // --- Core Logic: Always rebuild from scratch for 100% accuracy ---
-        posterContainer.innerHTML = '';
-        
-        const faiChunContainer = document.createElement('div');
-        const imageContainer = document.createElement('div');
-        imageContainer.className = 'fai-chun-text';
-        
-        faiChunContainer.appendChild(imageContainer);
-        posterContainer.appendChild(faiChunContainer);
-        faiChunContainer.onclick = showSaveModal;
-
-        // --- Apply Styles and Classes ---
-
-        // 1. Set orientation and direction classes
-        let faiChunClass = `fai-chun ${orientation}`;
-        if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
-        faiChunContainer.className = faiChunClass;
-
-        // 2. Set background color or transparency
-        if (isTransparentMode) {
-            faiChunContainer.classList.add('fai-chun-transparent');
-            faiChunContainer.style.backgroundColor = '';
-        } else {
-            faiChunContainer.classList.remove('fai-chun-transparent');
-            faiChunContainer.style.backgroundColor = selectedBackgroundColor;
-        }
-
-        // 3. Set padding and character count class
-        imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
-        imageContainer.className = `fai-chun-text char-count-${textInput.length}`;
-
-        // 4. Set character spacing (gap)
-        let finalGapValue = "0";
-        if (orientation === 'horizontal') {
-            imageContainer.style.justifyContent = 'center';
-             switch (characterSpacing) {
-                case 'none':    finalGapValue = '1rem'; break; // A reasonable default gap
-                case 'quarter': finalGapValue = '1.5vw'; break;
-                case 'third':   finalGapValue = '2vw'; break;
-                case 'half':    finalGapValue = '3vw'; break;
-                case 'full':    finalGapValue = '5vw'; break;
-            }
-        } else { // Vertical
-            imageContainer.style.justifyContent = 'center';
-            switch (characterSpacing) {
-                case 'none':    finalGapValue = '1rem'; break;
-                case 'quarter': finalGapValue = '1.5vh'; break;
-                case 'third':   finalGapValue = '2vh'; break;
-                case 'half':    finalGapValue = '3vh'; break;
-                case 'full':    finalGapValue = '5vh'; break;
-            }
-        }
-        imageContainer.style.gap = finalGapValue;
-        
-        // --- Build and Append Characters ---
-        const characters = textInput.split('');
-        for (const char of characters) {
-            try {
-                const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
-                const img = document.createElement('img');
-                img.src = coloredImageDataUrl;
-                const wrapperDiv = document.createElement('div');
-                wrapperDiv.className = 'char-wrapper';
-                // --- FIX STARTS HERE ---
-                // This logic overrides your static CSS to handle dynamic padding and fix save issues.
-                if (orientation === 'vertical' && characters.length > 0) {
-                    // FIX for Vertical Overflow & Squishing:
-                    // Calculate the available height after padding is removed.
-                    const availableHeight = 100 - paddingTop - paddingBottom;
-                    // Divide that height evenly among all characters.
-                    const charHeight = availableHeight / characters.length;
-                    // Apply this as an inline style to override the CSS from `sizingStyles`.
-                    wrapperDiv.style.height = charHeight + '%';
-                    // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
-                    wrapperDiv.style.flexShrink = '0';
-                } else {
-                    // FIX for Horizontal Stretching:
-                    // Override the fixed '10rem' height to be responsive to the container.
-                    wrapperDiv.style.height = '95%';
-                    // Enforce a square shape to prevent the image from stretching.
-                    wrapperDiv.style.aspectRatio = '1 / 1';
-                }
-                wrapperDiv.appendChild(img);
-                imageContainer.appendChild(wrapperDiv);
-            } catch (error) {
-                console.error("Failed to create colored character:", error);
-            }
-        }
-        setTimeout(() => smoothScrollTo(posterContainer), 50);
-        const posterElement = posterContainer.querySelector('.fai-chun');
-        if (posterElement) {
-            // Clear any previous content
-            fullscreenContent.innerHTML = '';
-            // Clone the node so we don't move the original from the page
-            const clone = posterElement.cloneNode(true);
-            // Remove the onclick event from the clone to prevent saving from the preview
-            clone.onclick = null;
-            // Add the clone to our fullscreen container
-            fullscreenContent.appendChild(clone);
-            // Make the overlay visible
-            fullscreenPreview.classList.add('visible');
-        }
-      }
       
       const sizingStyles = `
         /* --- Vertical Sizing (Percentage-Based) --- */
