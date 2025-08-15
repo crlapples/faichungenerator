@@ -985,7 +985,7 @@
         >
         <button
           id="createBtn"
-          onclick="generateFaiChun(); fullscreenPopup();"
+          onclick="generateFaiChun(); fullscreenPopup(); scrollCreate();"
           class="generate-button"
         >
           Create
@@ -1415,6 +1415,10 @@
                 console.error("Failed to create colored character:", error);
             }
         }
+      }
+
+      function scrollCreate() {
+        const posterContainer = document.getElementById('posterContainer');
         setTimeout(() => smoothScrollTo(posterContainer), 50);
       }
 
