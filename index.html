@@ -1086,76 +1086,140 @@
           }
       }
 
-      async function savePoster() {
+      /**
+ * Recursively copies all computed CSS styles from a source element to a target element,
+ * including handling for pseudo-elements (::before, ::after) to ensure a perfect clone for html2canvas.
+ * @param {HTMLElement} source - The element to read styles from.
+ * @param {HTMLElement} target - The element to apply styles to.
+ */
+async function applyComputedStyles(source, target) {
+    // Copy computed styles for the element itself
+    const computedStyle = window.getComputedStyle(source);
+    for (const property of computedStyle) {
+        target.style.setProperty(
+            property,
+            computedStyle.getPropertyValue(property),
+            computedStyle.getPropertyPriority(property)
+        );
+    }
+
+    // Handle pseudo-elements (::before and ::after)
+    const pseudoElements = [':before', ':after'];
+    for (const pseudo of pseudoElements) {
+        const pseudoStyle = window.getComputedStyle(source, pseudo);
+        if (pseudoStyle.content && pseudoStyle.content !== 'none' && pseudoStyle.content !== '""') {
+            // Create a new element to represent the pseudo-element
+            const pseudoNode = document.createElement('div');
+            for (const property of pseudoStyle) {
+                pseudoNode.style.setProperty(
+                    property,
+                    pseudoStyle.getPropertyValue(property),
+                    pseudoStyle.getPropertyPriority(property)
+                );
+            }
+            // Set content, removing quotes from content property
+            const content = pseudoStyle.content.replace(/^['"]|['"]$/g, '');
+            pseudoNode.textContent = content;
+            // Position pseudo-element based on its computed style
+            pseudoNode.style.position = pseudoStyle.position || 'absolute';
+            if (pseudo === ':before') {
+                target.prepend(pseudoNode);
+            } else {
+                target.append(pseudoNode);
+            }
+        }
+    }
+
+    // Recursively apply styles to all children
+    for (let i = 0; i < source.children.length; i++) {
+        if (target.children[i]) {
+            await applyComputedStyles(source.children[i], target.children[i]);
+        } else {
+            console.warn(`Mismatch in child elements at index ${i}. Source:`, source.children[i]);
+        }
+    }
+}
+
+/**
+ * Saves the generated Fai Chun by:
+ * 1. Cloning the on-screen element.
+ * 2. Recursively applying all computed CSS styles, including pseudo-elements.
+ * 3. Preloading fonts and images.
+ * 4. Rendering the clone with html2canvas.
+ */
+async function savePoster() {
+    // 1. Target the original poster element
     const originalPoster = document.querySelector('#posterContainer .fai-chun');
-    
     if (!originalPoster) {
         console.error("Save failed: Original poster element not found.");
         hideSaveModal();
         return;
     }
 
-    // Wait for fonts to load
-    await document.fonts.ready;
+    // 2. Wait for fonts to load to ensure text renders correctly
+    try {
+        await document.fonts.ready;
+    } catch (error) {
+        console.warn("Font loading failed:", error);
+    }
 
+    // 3. Create a deep clone of the element
     const clone = originalPoster.cloneNode(true);
 
-    // Apply computed styles recursively
-    async function applyComputedStyles(source, target) {
-        const computedStyle = window.getComputedStyle(source);
-        for (const property of computedStyle) {
-            target.style.setProperty(property, computedStyle.getPropertyValue(property), computedStyle.getPropertyPriority(property));
-        }
-        for (let i = 0; i < source.children.length; i++) {
-            await applyComputedStyles(source.children[i], target.children[i]);
-        }
+    // 4. Apply all computed styles recursively, including pseudo-elements
+    try {
+        await applyComputedStyles(originalPoster, clone);
+    } catch (error) {
+        console.error("Error applying styles:", error);
+        hideSaveModal();
+        return;
     }
-    await applyComputedStyles(originalPoster, clone);
 
-    // Set explicit dimensions and position
+    // 5. Set explicit dimensions and position for the clone
     clone.style.width = `${originalPoster.offsetWidth}px`;
     clone.style.height = `${originalPoster.offsetHeight}px`;
     clone.style.position = 'absolute';
     clone.style.transform = 'translate(-9999px, -9999px)';
-    clone.style.opacity = '1';
+    clone.style.opacity = '1'; // Ensure visibility for rendering
 
+    // 6. Append the clone to the DOM
     document.body.appendChild(clone);
 
     try {
-        // Handle image loading with CORS
+        // 7. Preload all images with CORS handling
         const images = clone.querySelectorAll('img');
         images.forEach(img => {
-            img.crossOrigin = 'Anonymous';
+            img.crossOrigin = 'Anonymous'; // Ensure CORS compatibility
         });
         const imageLoadPromises = Array.from(images).map(img => {
-            return new Promise((resolve, reject) => {
+            return new Promise((resolve) => {
                 if (img.complete && img.naturalWidth !== 0) {
                     resolve();
                 } else {
                     img.onload = resolve;
                     img.onerror = () => {
                         console.warn(`Image failed to load: ${img.src}`);
-                        resolve();
+                        resolve(); // Continue even if an image fails
                     };
                 }
             });
         });
-
         await Promise.all(imageLoadPromises);
 
-        // Render with html2canvas
+        // 8. Render the clone with html2canvas
         const canvas = await html2canvas(clone, {
             backgroundColor: null,
-            scale: 3,
-            logging: true
+            scale: 3, // High-resolution rendering
+            logging: true, // Enable debugging
+            useCORS: true // Ensure CORS for external resources
         });
 
-        // Verify canvas
+        // 9. Verify canvas output
         if (canvas.width === 0 || canvas.height === 0) {
             throw new Error('Canvas has invalid dimensions');
         }
 
-        // Trigger download
+        // 10. Trigger the download
         const dataURL = canvas.toDataURL('image/png');
         if (!dataURL.startsWith('data:image/png;base64,')) {
             throw new Error('Invalid data URL generated');
@@ -1168,6 +1232,7 @@
     } catch (error) {
         console.error("Error during html2canvas rendering:", error);
     } finally {
+        // 11. Clean up
         document.body.removeChild(clone);
         hideSaveModal();
         hidePreview();
