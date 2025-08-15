@@ -1088,9 +1088,9 @@
 
       /**
          * Saves the generated Fai Chun poster as a PNG image using html2canvas.
-         * FINAL, BULLETPROOF VERSION: This function renders an invisible, on-screen clone.
-         * This forces the browser to calculate its true dimensions, solving all measurement
-         * issues that lead to squished or empty images.
+         * FINAL ROBUST VERSION: This version renders a prepared, off-screen clone
+         * of the original poster to guarantee a clean and accurate render, avoiding
+         * all issues with timing, visibility, and CSS conflicts.
          */
         async function savePoster() {
             // 1. Target the original, stable poster element in the main document.
@@ -1105,32 +1105,37 @@
             // 2. Create a deep clone of the element to work with.
             const clone = originalPoster.cloneNode(true);
         
-            // 3. Prepare the clone for INVISIBLE, ON-SCREEN rendering.
-            // This is the key to getting correct measurements.
-            clone.style.position = 'fixed';
-            clone.style.top = '0';
-            clone.style.left = '0';
-            clone.style.zIndex = '-1'; // Hide it behind everything.
-            clone.style.opacity = '0';   // Make it fully transparent.
+            // 3. Prepare the clone for off-screen rendering.
+            // This makes it fully measurable by the browser without being visible.
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px'; // Position it far off-screen.
+            clone.style.top = '0px';
+            
+            // Ensure the clone's container has the same explicit dimensions as the original.
+            const originalRect = originalPoster.getBoundingClientRect();
+            clone.style.width = `${originalRect.width}px`;
+            clone.style.height = `${originalRect.height}px`;
         
-            // 4. Append the clone to the body to force the browser to render it.
+            // 4. Append the clone to the body so it becomes part of the document layout.
             document.body.appendChild(clone);
         
-            // 5. Get the clone's children and lock in their dimensions.
-            // We measure the clone's children now that they are guaranteed to be rendered.
+            // 5. Force absolute pixel dimensions on the clone's children.
+            // We measure the children of the ORIGINAL element to get the correct dimensions.
+            const originalCharWrappers = originalPoster.querySelectorAll('.char-wrapper');
             const cloneCharWrappers = clone.querySelectorAll('.char-wrapper');
         
-            cloneCharWrappers.forEach(wrapper => {
-                const rect = wrapper.getBoundingClientRect();
-                
-                // This measurement will now be correct because the clone is in the viewport.
-                wrapper.style.height = `${rect.height}px`;
-                wrapper.style.flexBasis = `${rect.height}px`;
-                wrapper.style.width = `${rect.width}px`;
+            originalCharWrappers.forEach((originalWrapper, index) => {
+                const cloneWrapper = cloneCharWrappers[index];
+                if (cloneWrapper) {
+                    const rect = originalWrapper.getBoundingClientRect();
+                    cloneWrapper.style.height = `${rect.height}px`;
+                    cloneWrapper.style.flexBasis = `${rect.height}px`;
+                    cloneWrapper.style.width = `${rect.width}px`; // Also lock in the width.
+                }
             });
         
             try {
-                // 6. Render the prepared, invisible, on-screen clone.
+                // 6. Render the prepared, off-screen clone.
                 const canvas = await html2canvas(clone, {
                     backgroundColor: null,
                     scale: 3
