@@ -1281,22 +1281,39 @@
               setTimeout(() => smoothScrollTo(textColorSelector), 200);
           });
 
-          // Add this new event listener for the background palette label
-            bgColorPickerLabel.addEventListener('click', () => {
-                // This logic runs instantly when you click the 🎨 icon
-                deselectAll(bgChoicesContainer);
-                bgColorPickerLabel.classList.add('selected');
-                isTransparentMode = false;
-                isBgColorSelected = true;
-                selectedBackgroundColor = bgColorPickerInput.value; // Use the input's current color
-                checkUiState();
-                generateFaiChun();
-            });
+                    // --- UNIFIED EVENT LISTENERS FOR BACKGROUND COLOR PICKER ---
+
+          // This listener handles the LIVE color change from the picker dialog.
+          bgColorPickerInput.addEventListener('input', (event) => {
+              const newColor = event.target.value;
+              bgColorPickerLabel.style.backgroundColor = newColor;
+              selectedBackgroundColor = newColor;
+              generateFaiChun(); // Update the poster in real-time
+          });
+
+          // This listener handles the INITIAL click on the 🎨 icon.
+          bgColorPickerLabel.addEventListener('click', () => {
+              const currentColor = bgColorPickerInput.value;
+              deselectAll(bgChoicesContainer);
+              bgColorPickerLabel.classList.add('selected');
+              bgColorPickerLabel.style.backgroundColor = currentColor; // Instantly update swatch
+              isTransparentMode = false;
+              isBgColorSelected = true;
+              selectedBackgroundColor = currentColor;
+              checkUiState();
+              generateFaiChun();
+          });
           
-          // --- EVENT LISTENERS FOR TEXT COLOR ---
+          // --- UNIFIED EVENT LISTENERS FOR TEXT COLOR PICKER ---
+          
+          // This listener handles clicks on the PRESET color choices.
           textChoicesContainer.addEventListener('click', (event) => {
               const choice = event.target.closest('.text-choice');
-              if (!choice) return;
+              if (!choice) return; // Exit if the click wasn't on a choice
+
+              // Don't interfere with the color picker's own click handling
+              if (choice.id === 'textColorPickerLabel') return;
+
               deselectAll(textChoicesContainer);
               choice.classList.add('selected');
               selectedTextColor = choice.getAttribute('data-color');
@@ -1306,19 +1323,25 @@
               setTimeout(() => smoothScrollTo(inputSection), 200);
           });
 
-          // Replace this...
-            textColorPickerInput.addEventListener('input', (event) => {
-                textColorPickerLabel.style.backgroundColor = event.target.value;
-            });
+          // This listener handles the LIVE color change from the picker dialog.
+          textColorPickerInput.addEventListener('input', (event) => {
+              const newColor = event.target.value;
+              textColorPickerLabel.style.backgroundColor = newColor;
+              selectedTextColor = newColor;
+              generateFaiChun(); // Update the poster in real-time
+          });
 
-            // ...with this new version
-            textColorPickerInput.addEventListener('input', (event) => {
-                // Update the swatch color preview
-                textColorPickerLabel.style.backgroundColor = event.target.value;
-                // Run the full selection and update logic for a live preview
-                selectedTextColor = event.target.value;
-                generateFaiChun();
-            });
+          // This listener handles the INITIAL click on the 🎨 icon.
+          textColorPickerLabel.addEventListener('click', () => {
+              const currentColor = textColorPickerInput.value;
+              deselectAll(textChoicesContainer);
+              textColorPickerLabel.classList.add('selected');
+              textColorPickerLabel.style.backgroundColor = currentColor; // Instantly update swatch
+              isTextColorSelected = true;
+              selectedTextColor = currentColor;
+              checkUiState();
+              generateFaiChun();
+          });
 
           
           // --- SLIDER LISTENERS ---
