@@ -1362,7 +1362,10 @@
           const confirmSaveButton = document.getElementById('confirmSaveButton');
           const cancelButton = document.getElementById('cancelButton');
 
-          confirmSaveButton.addEventListener('click', savePoster);
+          confirmSaveButton.addEventListener('click', async () => {
+              await savePoster();
+          });
+
           cancelButton.addEventListener('click', hideSaveModal);
           modalOverlay.addEventListener('click', (event) => {
               if (event.target === modalOverlay) {
@@ -1395,12 +1398,10 @@
               }
           });
 
-          // Listener for the "Save" button
-          savePreviewBtn.addEventListener('click', (event) => {
-              // CRITICAL: Stop the click from bubbling up to the overlay
+          savePreviewBtn.addEventListener('click', async (event) => {
               event.stopPropagation(); 
-              savePoster();
-              hidePreview();
+              await savePoster();
+              // hidePreview() is now handled inside the savePoster function's finally block
           });
 
           // Listener for the "Close" button
@@ -1498,7 +1499,7 @@
             const rect = firstCharacter.getBoundingClientRect();
             
             // Calculate the gap based on your 100px margin / 480px character ratio
-            const gapValue = (100 / 480) * rect.width;
+            const gapValue = (50 / 480) * rect.width;
             
             // Apply the calculated space between the characters
             imageContainer.style.gap = `${gapValue}px`;
