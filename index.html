@@ -1329,7 +1329,7 @@ async function savePoster() {
 
           savePreviewBtn.addEventListener('click', async (event) => {
               event.stopPropagation(); 
-              await savePoster();
+              savePoster();
               hidePreview();
               // hidePreview() is now handled inside the savePoster function's finally block
           });
