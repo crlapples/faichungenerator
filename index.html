@@ -1120,87 +1120,57 @@
       }
 
      async function savePoster() {
-    const originalPoster = document.querySelector('#posterContainer .fai-chun');
-    
-    if (!originalPoster) {
-        console.error("Save failed: Original poster element not found.");
-        alert("No poster found to save. Please generate a poster first.");
-        hideSaveModal();
-        return;
-    }
+          const posterElement = document.querySelector('#posterContainer .fai-chun');
+          if (!posterElement) {
+              console.error('No poster element found to save.');
+              return;
+          }
 
-    const offscreenContainer = document.createElement('div');
-    offscreenContainer.style.position = 'absolute';
-    offscreenContainer.style.left = '-9999px';
-    offscreenContainer.style.top = '0';
-    offscreenContainer.style.transform = 'none';
-    offscreenContainer.style.opacity = '1';
-    offscreenContainer.style.pointerEvents = 'none';
+          try {
+              // Create a temporary container to render the poster at high resolution
+              const tempContainer = document.createElement('div');
+              tempContainer.style.position = 'absolute';
+              tempContainer.style.left = '-9999px'; // Move off-screen
+              tempContainer.style.transform = 'scale(2)'; // Scale up for higher resolution
+              tempContainer.style.transformOrigin = 'top left';
+              document.body.appendChild(tempContainer);
 
-    const clone = originalPoster.cloneNode(true);
-    offscreenContainer.appendChild(clone);
-    document.body.appendChild(offscreenContainer);
+              // Clone the poster and append to temporary container
+              const clonedPoster = posterElement.cloneNode(true);
+              tempContainer.appendChild(clonedPoster);
 
-    const originalRect = originalPoster.getBoundingClientRect();
-    offscreenContainer.style.width = `${originalRect.width}px`;
-    offscreenContainer.style.height = `${originalRect.height}px`;
-    offscreenContainer.style.overflow = 'hidden';
-    clone.style.width = `${originalRect.width}px`;
-    clone.style.height = `${originalRect.height}px`;
-    clone.style.margin = '0';
-    clone.style.padding = originalPoster.style.padding;
-    clone.style.boxSizing = 'border-box';
+              // Ensure the clone has the same styles
+              const computedStyle = window.getComputedStyle(posterElement);
+              clonedPoster.style.width = computedStyle.width;
+              clonedPoster.style.height = computedStyle.height;
+              clonedPoster.style.backgroundColor = isTransparentMode ? 'transparent' : selectedBackgroundColor;
+              clonedPoster.style.border = isTransparentMode ? 'none' : computedStyle.border;
+              clonedPoster.style.boxShadow = isTransparentMode ? 'none' : computedStyle.boxShadow;
 
-    const images = clone.querySelectorAll('img');
-    const loadPromises = Array.from(images).map(img => {
-        if (img.src.startsWith('data:')) {
-            return Promise.resolve();
-        }
-        return new Promise(resolve => {
-            console.warn(`Non-data URL detected: ${img.src}. Replacing with placeholder.`);
-            img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
-            resolve();
-        });
-    });
+              // Capture the poster using html2canvas
+              const canvas = await html2canvas(clonedPoster, {
+                  backgroundColor: isTransparentMode ? null : selectedBackgroundColor,
+                  scale: 2, // Match the transform scale for crisp output
+                  useCORS: true // Ensure images load correctly
+              });
 
-    try {
-        await Promise.all(loadPromises);
+              // Create a download link
+              const link = document.createElement('a');
+              link.download = `fai-chun-${new Date().toISOString().split('T')[0]}.png`;
+              link.href = canvas.toDataURL('image/png');
+              link.click();
 
-        if (clone.querySelectorAll('img').length === 0) {
-            console.error("No images to render. Cannot save poster.");
-            alert("No valid images found in the poster. Please try again.");
-            return;
-        }
-
-        clone.offsetHeight;
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        const canvas = await html2canvas(clone, {
-            backgroundColor: isTransparentMode ? null : selectedBackgroundColor,
-            scale: 3,
-            useCORS: true,
-            allowTaint: true,
-            logging: false,
-            windowWidth: originalRect.width,
-            windowHeight: originalRect.height
-        });
-
-        const dataURL = canvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.download = 'fai-chun.png';
-        link.href = dataURL;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-    } catch (error) {
-        console.error("Error during html2canvas rendering:", error);
-        alert("Failed to save the poster. Please check the console for errors.");
-    } finally {
-        document.body.removeChild(offscreenContainer);
-        hideSaveModal();
-    }
-}
+              // Clean up
+              document.body.removeChild(tempContainer);
+          } catch (error) {
+              console.error('Error saving poster:', error);
+          } finally {
+              // Hide the modal and preview after saving
+              hideSaveModal();
+              fullscreenPreview.classList.remove('visible');
+              fullscreenActions.classList.remove('visible');
+          }
+      }
 
       document.addEventListener('DOMContentLoaded', () => {
           fetch('character_map.json')
