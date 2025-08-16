@@ -1455,7 +1455,7 @@ for (const char of characters) {
         if (orientation === 'vertical') {
             // Vertical: Each character takes equal vertical space
             wrapperDiv.style.height = `calc(100% / ${charCount})`;
-            wrapperDiv.style.width = '100%';
+            
         } else { 
             // Horizontal: Each character takes equal horizontal space
             wrapperDiv.style.width = `calc(100% / ${charCount})`;
@@ -1476,10 +1476,15 @@ for (const char of characters) {
 
         // --- DYNAMIC SPACING CALCULATION (AFTER CHARACTERS ARE CREATED) ---
         const firstCharacter = imageContainer.querySelector('.char-wrapper');
-        if (firstCharacter) {
-            // Measure the final pixel size of a character
-            const rect = firstCharacter.getBoundingClientRect();
-            
+        if (orientation === 'vertical') {
+            if (firstCharacter) {
+                // Measure the final pixel size of a character
+                const rect = firstCharacter.getBoundingClientRect();
+                const gapValue = (50 / 480) * rect.width;
+                
+                // Apply the calculated space between the characters
+                imageContainer.style.gap = `${gapValue}px`;
+            }
         }
 
         return Promise.all(imageLoadPromises);
