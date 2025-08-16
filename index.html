@@ -1129,7 +1129,6 @@
         return;
     }
 
-    // Create a clean container to isolate rendering
     const offscreenContainer = document.createElement('div');
     offscreenContainer.style.position = 'absolute';
     offscreenContainer.style.left = '-9999px';
@@ -1138,7 +1137,6 @@
     offscreenContainer.style.opacity = '1';
     offscreenContainer.style.pointerEvents = 'none';
 
-    // Clone only the .fai-chun element
     const clone = originalPoster.cloneNode(true);
     offscreenContainer.appendChild(clone);
     document.body.appendChild(offscreenContainer);
@@ -1153,19 +1151,15 @@
     clone.style.padding = originalPoster.style.padding;
     clone.style.boxSizing = 'border-box';
 
-    // Verify all images use data URLs
     const images = clone.querySelectorAll('img');
     const loadPromises = Array.from(images).map(img => {
         if (img.src.startsWith('data:')) {
-            return Promise.resolve(); // Data URLs are already loaded
+            return Promise.resolve();
         }
         return new Promise(resolve => {
-            img.onload = resolve;
-            img.onerror = () => {
-                console.warn(`Image failed to load: ${img.src}. Replacing with placeholder.`);
-                img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; // 1x1 transparent pixel
-                resolve();
-            };
+            console.warn(`Non-data URL detected: ${img.src}. Replacing with placeholder.`);
+            img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+            resolve();
         });
     });
 
@@ -1178,7 +1172,7 @@
             return;
         }
 
-        clone.offsetHeight; // Trigger reflow
+        clone.offsetHeight;
         await new Promise(resolve => setTimeout(resolve, 50));
 
         const canvas = await html2canvas(clone, {
