@@ -1413,8 +1413,6 @@
 for (const char of characters) {
     try {
         const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
-        const img = document.createElement('img');
-        img.src = coloredImageDataUrl;
         const wrapperDiv = document.createElement('div');
         wrapperDiv.className = 'char-wrapper';
 
