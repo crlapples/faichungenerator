@@ -1461,18 +1461,61 @@ for (const char of characters) {
     }
 }
 
-        // --- DYNAMIC SPACING CALCULATION (AFTER CHARACTERS ARE CREATED) ---
-        const firstCharacter = imageContainer.querySelector('.char-wrapper');
-        if (orientation === 'vertical') {
-            if (firstCharacter) {
-                // Measure the final pixel size of a character
-                const rect = firstCharacter.getBoundingClientRect();
-                const gapValue = (50 / 480) * rect.width;
-                
-                // Apply the calculated space between the characters
-                imageContainer.style.gap = `${gapValue}px`;
-            }
+       /**
+ * Applies character spacing and adjusts character widths to prevent overflow.
+ * @param {string} orientation - The current layout ('vertical' or 'horizontal').
+ * @param {string} spacing - The selected spacing value ('none', 'quarter', etc.).
+ * @param {HTMLElement} container - The flex container for the characters (.fai-chun-text).
+ */
+function applyCharacterSpacing(orientation, spacing, container) {
+    const characters = container.querySelectorAll('.char-wrapper');
+    const charCount = characters.length;
+
+    // --- Horizontal Spacing Logic ---
+    if (orientation === 'horizontal') {
+        // Define the fixed gap values for horizontal layout
+        const horizontalGaps = {
+            quarter: '0.5rem',
+            third: '0.75rem',
+            half: '1rem',
+            full: '2rem'
+        };
+        
+        // Get the selected gap value, defaulting to '0px' for 'none'
+        const gapValue = horizontalGaps[spacing] || '0px';
+        
+        // 1. Apply the gap to the container
+        container.style.gap = gapValue;
+
+        // 2. Recalculate the width of each character to account for the gap
+        if (charCount > 1) {
+            // The formula: (Total Width - Total Gap Space) / Number of Characters
+            const newWidth = `calc((100% - (${charCount - 1} * ${gapValue})) / ${charCount})`;
+            
+            characters.forEach(char => {
+                char.style.width = newWidth;
+            });
+        } else if (charCount === 1) {
+            // If there's only one character, it should take up the full space
+            characters[0].style.width = '100%';
         }
+
+    // --- Vertical Spacing Logic ---
+    } else if (orientation === 'vertical') {
+        // The proportional vertical logic remains the same as it doesn't cause overflow
+        const firstCharacter = characters[0];
+        if (!firstCharacter) return;
+
+        const spacingMultipliers = {
+            none: 0, quarter: 0.25, third: 0.33, half: 0.5, full: 1.0
+        };
+        const multiplier = spacingMultipliers[spacing] || 0;
+        
+        const rect = firstCharacter.getBoundingClientRect();
+        const gapValue = rect.height * multiplier;
+        container.style.gap = `${gapValue}px`;
+    }
+}
 
         return Promise.all(imageLoadPromises);
       }
@@ -1527,6 +1570,12 @@ for (const char of characters) {
                         if (elementHeight > 0 && elementHeight < targetHeight) {
                             const scaleFactor = targetHeight / elementHeight;
                             clone.style.transform = `scale(${scaleFactor})`;
+                        } 
+
+                        // Your logic: Check if it's too big
+                        else if (elementHeight > targetHeight) {
+                            scaleFactor = targetHeight / elementHeight; // Calculate scale-down factor
+                            clone.style.transform = `scale(${scaleFactor})`;
                         }
                     } else { // It's horizontal
                         const targetWidth = viewportWidth * 0.90; // 90% of viewport width
@@ -1534,6 +1583,11 @@ for (const char of characters) {
                         // If the poster is narrower than the target, calculate the scale factor
                         if (elementWidth > 0 && elementWidth < targetWidth) {
                             const scaleFactor = targetWidth / elementWidth;
+                            clone.style.transform = `scale(${scaleFactor})`;
+                        }
+
+                        else if (elementWidth > targetWidth) {
+                            scaleFactor = targetWidth / elementWidth; // Calculate scale-down factor
                             clone.style.transform = `scale(${scaleFactor})`;
                         }
                     }
