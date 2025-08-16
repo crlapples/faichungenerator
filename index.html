@@ -982,41 +982,22 @@
             </div>
         </div>
 
-        <div id="paddingControls">
-            <p class="tooltip">Poster Margins (%)</p>
-            <div class="padding-grid">
-                <!-- Top Slider -->
-                <div class="padding-slider">
-                    <div class="slider-label-container">
-                        <label for="paddingTop">Top</label>
-                        <span id="paddingTopValue" class="slider-value">5%</span>
-                    </div>
-                    <input type="range" id="paddingTop" min="0" max="20" value="5">
-                </div>
-                <!-- Bottom Slider -->
-                <div class="padding-slider">
-                    <div class="slider-label-container">
-                        <label for="paddingBottom">Bottom</label>
-                        <span id="paddingBottomValue" class="slider-value">5%</span>
-                    </div>
-                    <input type="range" id="paddingBottom" min="0" max="20" value="5">
-                </div>
-                <!-- Left Slider -->
-                <div class="padding-slider">
-                    <div class="slider-label-container">
-                        <label for="paddingLeft">Left</label>
-                        <span id="paddingLeftValue" class="slider-value">5%</span>
-                    </div>
-                    <input type="range" id="paddingLeft" min="0" max="20" value="5">
-                </div>
-                <!-- Right Slider -->
-                <div class="padding-slider">
-                    <div class="slider-label-container">
-                        <label for="paddingRight">Right</label>
-                        <span id="paddingRightValue" class="slider-value">5%</span>
-                    </div>
-                    <input type="range" id="paddingRight" min="0" max="20" value="5">
-                </div>
+        <!-- REPLACED Padding Controls with Margin Presets -->
+        <div id="marginSelector">
+            <p class="tooltip">Poster Margins</p>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="marginSize" value="small"> Small
+                </label>
+                <label>
+                    <input type="radio" name="marginSize" value="medium" checked> Medium
+                </label>
+                <label>
+                    <input type="radio" name="marginSize" value="large"> Large
+                </label>
+                <label>
+                    <input type="radio" name="marginSize" value="xl"> Extra Large
+                </label>
             </div>
         </div>
 
@@ -1114,6 +1095,31 @@
           });
       }
 
+      // --- NEW: MARGIN PRESET LISTENER ---
+
+// Define the percentage values for each preset
+const marginPresets = {
+    small: 2,
+    medium: 5, // This matches the original default
+    large: 10,
+    xl: 15
+};
+
+// Listen for changes on the entire radio button group
+document.getElementById('marginSelector').addEventListener('change', (event) => {
+    const selectedSize = event.target.value; // e.g., "medium"
+    const marginValue = marginPresets[selectedSize]; // e.g., 5
+
+    // Update all padding variables to the same value
+    paddingTop = marginValue;
+    paddingRight = marginValue;
+    paddingBottom = marginValue;
+    paddingLeft = marginValue;
+
+    // Regenerate the poster with the new margins
+    generateFaiChun();
+});
+
       /**
        * Displays the save confirmation modal dialog.
        */
@@ -1193,16 +1199,6 @@ async function savePoster() {
           const orientationRadios = document.querySelectorAll('input[name="orientation"]');
           const directionSelector = document.getElementById('directionSelector');
           const chineseTextInput = document.getElementById('chineseText');
-
-          // Sliders and Value Displays
-          const paddingTopSlider = document.getElementById('paddingTop');
-          const paddingRightSlider = document.getElementById('paddingRight');
-          const paddingBottomSlider = document.getElementById('paddingBottom');
-          const paddingLeftSlider = document.getElementById('paddingLeft');
-          const paddingTopValue = document.getElementById('paddingTopValue');
-          const paddingRightValue = document.getElementById('paddingRightValue');
-          const paddingBottomValue = document.getElementById('paddingBottomValue');
-          const paddingLeftValue = document.getElementById('paddingLeftValue');
           
           const savePreviewBtn = document.getElementById('savePreviewBtn');
           const closePreviewBtn = document.getElementById('closePreviewBtn');
@@ -1316,29 +1312,6 @@ async function savePoster() {
               isTextColorSelected = true;
               selectedTextColor = currentColor;
               checkUiState();
-              generateFaiChun();
-          });
-
-          
-          // --- SLIDER LISTENERS ---
-          paddingTopSlider.addEventListener('input', (event) => {
-              paddingTop = event.target.value;
-              paddingTopValue.textContent = `${event.target.value}%`;
-              generateFaiChun();
-          });
-          paddingRightSlider.addEventListener('input', (event) => {
-              paddingRight = event.target.value;
-              paddingRightValue.textContent = `${event.target.value}%`;
-              generateFaiChun();
-          });
-          paddingBottomSlider.addEventListener('input', (event) => {
-              paddingBottom = event.target.value;
-              paddingBottomValue.textContent = `${event.target.value}%`;
-              generateFaiChun();
-          });
-          paddingLeftSlider.addEventListener('input', (event) => {
-              paddingLeft = event.target.value;
-              paddingLeftValue.textContent = `${event.target.value}%`;
               generateFaiChun();
           });
 
