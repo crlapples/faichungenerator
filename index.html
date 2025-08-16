@@ -160,15 +160,52 @@
         max-width: 90vw;          /* Ensures it never overflows the screen */
         border: 8px solid #facc15;/* The border for non-white backgrounds */
       }
+
+      .fai-chun.horizontal {
+  --char-count: 1; /* Default to 1 character */
+}
+
+/* 2. Use :has() to detect the number of grandchildren and update the variable.
+      This selector says: "If the .fai-chun element has a grandchild that is
+      the Nth child AND the last child, update the --char-count variable." */
+
+.fai-chun.horizontal:has(.char-wrapper:nth-child(1):last-child) {
+  --char-count: 1;
+}
+.fai-chun.horizontal:has(.char-wrapper:nth-child(2):last-child) {
+  --char-count: 2;
+}
+.fai-chun.horizontal:has(.char-wrapper:nth-child(3):last-child) {
+  --char-count: 3;
+}
+.fai-chun.horizontal:has(.char-wrapper:nth-child(4):last-child) {
+  --char-count: 4;
+}
+.fai-chun.horizontal:has(.char-wrapper:nth-child(5):last-child) {
+  --char-count: 5;
+}
+.fai-chun.horizontal:has(.char-wrapper:nth-child(6):last-child) {
+  --char-count: 6;
+}
+.fai-chun.horizontal:has(.char-wrapper:nth-child(7):last-child) {
+  --char-count: 7;
+}
+
+/* 3. Modify the main rule to use the variable in a calc() function. */
+.fai-chun.horizontal {
+  display: flex;
+  /* The calculated width! */
+  width: calc(var(--char-count) * 13.5%);
+}
       
-      .fai-chun.horizontal {       /* Use most of the screen width */
-        max-width: 70rem;         /* But don't let it get too wide */
+      .fai-chun.horizontal {          /* But don't let it get too wide */
         height: 5rem;            /* A generous height for large characters */
         border: 8px solid #facc15;
         display: flex;
         align-items: center;
         justify-content: center;
         overflow: hidden;
+        width: calc(var(--char-count) * 13.5%);
       }
 
       .char-wrapper img {
