@@ -1170,89 +1170,98 @@ async function savePoster() {
             throw new Error('Canvas tainted: Check image CORS headers');
         }
 
-        // Generate and validate data URL
+        // Generate data URL and test rendering
         const dataUrl = canvas.toDataURL('image/png');
         console.log('savePoster: Data URL generated, length:', dataUrl.length);
         if (!dataUrl.startsWith('data:image/png;base64,')) {
             throw new Error('savePoster: Invalid data URL generated');
         }
-
-        // Test data URL by creating an image
         const testImg = new Image();
         testImg.onload = () => console.log('savePoster: Data URL renders as image');
         testImg.onerror = () => console.error('savePoster: Data URL failed to render as image');
         testImg.src = dataUrl;
 
-        // Create download link
-        const link = document.createElement('a');
-        link.download = `fai-chun-${new Date().toISOString().split('T')[0]}.png`;
-        link.href = dataUrl;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        console.log('savePoster: Download link created and appended to DOM', {
-            hrefLength: link.href.length,
-            download: link.download,
-            isInDOM: document.body.contains(link)
-        });
+        // Create Blob as an alternative to data URL
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                console.error('savePoster: Failed to create Blob from canvas');
+                return;
+            }
+            console.log('savePoster: Blob created, size:', blob.size, 'type:', blob.type);
+
+            // Create download link from Blob
+            const blobUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `fai-chun-${new Date().toISOString().split('T')[0]}.png`;
+            link.href = blobUrl;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            console.log('savePoster: Download link created from Blob', {
+                hrefLength: blobUrl.length,
+                download: link.download,
+                isInDOM: document.body.contains(link)
+            });
+
+            // Add manual download button
+            const manualButton = document.createElement('button');
+            manualButton.textContent = 'Manually Download Poster';
+            manualButton.style.position = 'fixed';
+            manualButton.style.top = '50%';
+            manualButton.style.left = '50%';
+            manualButton.style.transform = 'translate(-50%, -50%)';
+            manualButton.style.padding = '10px 20px';
+            manualButton.style.backgroundColor = '#dc2626';
+            manualButton.style.color = 'white';
+            manualButton.style.border = 'none';
+            manualButton.style.borderRadius = '5px';
+            manualButton.style.cursor = 'pointer';
+            manualButton.style.zIndex = '3000';
+            manualButton.onclick = () => {
+                link.click();
+                console.log('savePoster: Manual download button clicked');
+                document.body.removeChild(manualButton);
+                URL.revokeObjectURL(blobUrl);
+            };
+            document.body.appendChild(manualButton);
+
+            // Simulate click with delay
+            setTimeout(() => {
+                try {
+                    const clickEvent = new MouseEvent('click', {
+                        view: window,
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    link.dispatchEvent(clickEvent);
+                    console.log('savePoster: Download link clicked via dispatchEvent');
+                } catch (clickError) {
+                    console.error('savePoster: Error dispatching click event', clickError);
+                    alert('Automatic download failed. Please click the "Manually Download Poster" button.');
+                }
+            }, 300);
+
+            // Fallback check
+            setTimeout(() => {
+                try {
+                    if (document.hasFocus()) {
+                        console.log('savePoster: Window still focused, download may have failed');
+                        alert('Download may have been blocked. Please click the "Manually Download Poster" button or check browser settings.');
+                    } else {
+                        console.log('savePoster: Window lost focus, download likely succeeded');
+                    }
+                } catch (e) {
+                    console.error('savePoster: Error in fallback check', e);
+                }
+            }, 1500);
+
+            // Clean up
+            document.body.removeChild(tempContainer);
+            console.log('savePoster: Temporary container removed');
+        }, 'image/png', 1.0); // Quality 1.0 for best quality
 
         // Check CSP
         const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
         console.log('savePoster: CSP meta tag present?', !!cspMeta, cspMeta ? cspMeta.content : 'None');
-
-        // Add manual download button immediately
-        const manualButton = document.createElement('button');
-        manualButton.textContent = 'Manually Download Poster';
-        manualButton.style.position = 'fixed';
-        manualButton.style.top = '50%';
-        manualButton.style.left = '50%';
-        manualButton.style.transform = 'translate(-50%, -50%)';
-        manualButton.style.padding = '10px 20px';
-        manualButton.style.backgroundColor = '#dc2626';
-        manualButton.style.color = 'white';
-        manualButton.style.border = 'none';
-        manualButton.style.borderRadius = '5px';
-        manualButton.style.cursor = 'pointer';
-        manualButton.style.zIndex = '3000';
-        manualButton.onclick = () => {
-            link.click();
-            console.log('savePoster: Manual download button clicked');
-            document.body.removeChild(manualButton);
-        };
-        document.body.appendChild(manualButton);
-
-        // Simulate click with longer delay
-        setTimeout(() => {
-            try {
-                const clickEvent = new MouseEvent('click', {
-                    view: window,
-                    bubbles: true,
-                    cancelable: true
-                });
-                link.dispatchEvent(clickEvent);
-                console.log('savePoster: Download link clicked via dispatchEvent');
-            } catch (clickError) {
-                console.error('savePoster: Error dispatching click event', clickError);
-                alert('Automatic download failed. Please click the "Manually Download Poster" button.');
-            }
-        }, 300); // Increased to 300ms
-
-        // Fallback check with error handling
-        setTimeout(() => {
-            try {
-                if (document.hasFocus()) {
-                    console.log('savePoster: Window still focused, download may have failed');
-                    alert('Download may have been blocked. Please click the "Manually Download Poster" button or check browser settings.');
-                } else {
-                    console.log('savePoster: Window lost focus, download likely succeeded');
-                }
-            } catch (e) {
-                console.error('savePoster: Error in fallback check', e);
-            }
-        }, 1500);
-
-        // Clean up
-        document.body.removeChild(tempContainer);
-        console.log('savePoster: Temporary container removed');
     } catch (error) {
         console.error('savePoster: Error during save process', error);
         alert('Failed to save poster: ' + error.message + '. Please check the console.');
@@ -1265,6 +1274,11 @@ async function savePoster() {
         console.log('savePoster: Manual button and link cleaned up');
     }
 }
+
+// Global error handler
+window.addEventListener('error', (event) => {
+    console.error('Global error caught:', event.message, event.filename, event.lineno);
+});
 
 // Global error handler to catch unhandled exceptions
 window.addEventListener('error', (event) => {
