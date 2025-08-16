@@ -1152,7 +1152,8 @@ async function savePoster() {
         const canvas = await html2canvas(clonedPoster, {
             backgroundColor: isTransparentMode ? null : selectedBackgroundColor,
             scale: 2,
-            useCORS: true
+            useCORS: true,
+            logging: true // Enable html2canvas logging for debugging
         });
         console.log('savePoster: html2canvas rendering complete, canvas created');
         console.log('savePoster: Canvas dimensions', {
@@ -1160,34 +1161,84 @@ async function savePoster() {
             height: canvas.height
         });
 
-        // Generate data URL and check its validity
+        // Check if canvas is tainted (CORS issue)
+        try {
+            canvas.toDataURL('image/png');
+            console.log('savePoster: Canvas is not tainted');
+        } catch (e) {
+            console.error('savePoster: Canvas is tainted, likely due to CORS issues with images', e);
+            throw new Error('Canvas tainted: Ensure images in processed_web_characters/ have proper CORS headers');
+        }
+
+        // Generate data URL and validate
         const dataUrl = canvas.toDataURL('image/png');
         console.log('savePoster: Data URL generated, length:', dataUrl.length);
         if (!dataUrl.startsWith('data:image/png;base64,')) {
             throw new Error('savePoster: Invalid data URL generated');
         }
 
-        // Create and append download link to DOM
+        // Create download link
         const link = document.createElement('a');
         link.download = `fai-chun-${new Date().toISOString().split('T')[0]}.png`;
         link.href = dataUrl;
-        document.body.appendChild(link); // Append to DOM
+        link.style.display = 'none';
+        document.body.appendChild(link);
         console.log('savePoster: Download link created and appended to DOM', {
             hrefLength: link.href.length,
-            download: link.download
+            download: link.download,
+            isInDOM: document.body.contains(link)
         });
 
-        // Attempt to trigger download
-        link.click();
-        console.log('savePoster: Download link clicked');
+        // Check for CSP restrictions
+        const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+        console.log('savePoster: CSP meta tag present?', !!cspMeta, cspMeta ? cspMeta.content : 'None');
 
-        // Fallback: Prompt user if download doesn't start
+        // Simulate user-initiated click with a longer delay
         setTimeout(() => {
-            if (!document.hasFocus()) {
-                console.log('savePoster: Browser may have blocked download; window still focused');
-                alert('Download may have been blocked. Please check your browser settings or try right-clicking the image and selecting "Save Image As".');
+            try {
+                const clickEvent = new MouseEvent('click', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true
+                });
+                link.dispatchEvent(clickEvent);
+                console.log('savePoster: Download link clicked via dispatchEvent');
+            } catch (clickError) {
+                console.error('savePoster: Error dispatching click event', clickError);
+                // Fallback: Create a manual download button
+                console.log('savePoster: Creating manual download button');
+                const manualButton = document.createElement('button');
+                manualButton.textContent = 'Manually Download Poster';
+                manualButton.style.position = 'fixed';
+                manualButton.style.top = '50%';
+                manualButton.style.left = '50%';
+                manualButton.style.transform = 'translate(-50%, -50%)';
+                manualButton.style.padding = '10px 20px';
+                manualButton.style.backgroundColor = '#dc2626';
+                manualButton.style.color = 'white';
+                manualButton.style.border = 'none';
+                manualButton.style.borderRadius = '5px';
+                manualButton.style.cursor = 'pointer';
+                manualButton.style.zIndex = '3000';
+                manualButton.onclick = () => {
+                    link.click();
+                    console.log('savePoster: Manual download button clicked');
+                    document.body.removeChild(manualButton);
+                };
+                document.body.appendChild(manualButton);
+                alert('Automatic download failed. Click the "Manually Download Poster" button to save the image, or right-click the poster and select "Save Image As".');
             }
-        }, 1000);
+        }, 200); // Increased to 200ms delay
+
+        // Fallback check after 1.5 seconds
+        setTimeout(() => {
+            if (document.hasFocus()) {
+                console.log('savePoster: Window still focused, download may have failed');
+                alert('Download may have been blocked. Please check your browser settings, click the manual download button, or right-click the poster and select "Save Image As".');
+            } else {
+                console.log('savePoster: Window lost focus, download likely succeeded');
+            }
+        }, 1500);
 
         // Clean up
         document.body.removeChild(tempContainer);
@@ -1195,7 +1246,7 @@ async function savePoster() {
         console.log('savePoster: Temporary container and link removed');
     } catch (error) {
         console.error('savePoster: Error during save process', error);
-        alert('Failed to save poster. Please try again or check the console for details.');
+        alert('Failed to save poster: ' + error.message + '. Please check the console for details or try a different browser.');
     } finally {
         console.log('savePoster: Closing modals in finally block');
         hideSaveModal();
