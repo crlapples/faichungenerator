@@ -1402,14 +1402,14 @@ async function savePoster() {
                 const loadPromise = new Promise(resolve => { img.onload = resolve; });
                 imageLoadPromises.push(loadPromise);
                 
-                // --- DYNAMIC SIZING TO FIT ALL CHARACTERS ---
                 if (orientation === 'vertical') {
-                    // Each character takes up an equal fraction of the vertical space.
+                    // Vertical: Each character takes equal vertical space
                     wrapperDiv.style.height = `calc(100% / ${charCount})`;
-                } else { // Horizontal
-                    // Each character takes up an equal fraction of the horizontal space.
+                    wrapperDiv.style.width = '100%'; // Explicitly set width
+                } else { 
+                    // Horizontal: Each character takes equal horizontal space
                     wrapperDiv.style.width = `calc(100% / ${charCount})`;
-                }
+                    wrapperDiv.style.height = '100%'; // Explicitly set height
                 
                 // This command makes it a perfect square.
                 wrapperDiv.style.aspectRatio = '1 / 1';
