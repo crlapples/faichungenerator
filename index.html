@@ -1466,22 +1466,49 @@
                 imageLoadPromises.push(loadPromise)
                 // --- FIX STARTS HERE ---
                 // This logic overrides your static CSS to handle dynamic padding and fix save issues.
-                if (orientation === 'vertical' && characters.length > 0) {
-                    // FIX for Vertical Overflow & Squishing:
-                    wrapperDiv.style.aspectRatio = '1 / 1';
-                    wrapperDiv.style.width = '100%';
-                    // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
-                    wrapperDiv.style.flexShrink = '0';
-                } else {
-                    // FIX for Horizontal Overflow:
-                    // Set a minimum width of 0, which allows the item to shrink
-                    // below its fixed 10rem size when padding is added.
-                    wrapperDiv.style.height = '100%';
-                    wrapperDiv.style.minWidth = '0.5rem';
-                    wrapperDiv.style.minHeight = '2rem';
-                    wrapperDiv.style.flexShrink = '0';
-                    wrapperDiv.style.aspectRatio = '1 / 1';
+                        for (const char of characters) {
+            try {
+                // ... (your existing code to create the image) ...
+                const wrapperDiv = document.createElement('div');
+                wrapperDiv.className = 'char-wrapper';
+
+                // --- NEW: FIXED SIZING LOGIC ---
+
+                // 1. Define the large, fixed size for the characters here.
+                //    '10rem' is a good large size (~160px). You can adjust this value.
+                const fixedCharSize = '10rem';
+
+                // 2. Apply the fixed size.
+                //    For a vertical column, we define the height.
+                //    For a horizontal row, we define the width.
+                if (orientation === 'vertical') {
+                    wrapperDiv.style.height = fixedCharSize;
+                } else { // Horizontal
+                    wrapperDiv.style.width = fixedCharSize;
                 }
+                
+                // 3. The aspect-ratio rule makes the other dimension match, creating a perfect square.
+                wrapperDiv.style.aspectRatio = '1 / 1';
+
+
+                // 4. Calculate the margin based on the fixed size.
+                //    We create a CSS 'calc()' string to do the math.
+                const marginValue = `calc(${fixedCharSize} * 5 / 24)`;
+
+                // 5. Apply the calculated margin.
+                wrapperDiv.style.marginTop = marginValue;
+                wrapperDiv.style.marginBottom = marginValue;
+                wrapperDiv.style.marginLeft = marginValue;
+                wrapperDiv.style.marginRight = marginValue;
+
+
+                wrapperDiv.appendChild(img);
+                imageContainer.appendChild(wrapperDiv);
+
+            } catch (error) {
+                console.error("Failed to create colored character:", error);
+            }
+        }
                 wrapperDiv.appendChild(img);
                 imageContainer.appendChild(wrapperDiv);
             } catch (error) {
@@ -1527,7 +1554,6 @@
         /* This rule sets the width for all vertical characters */
         .fai-chun.vertical .char-wrapper {
           width: 100%;
-          margin: 100px;
         }
         /* These rules dynamically set the height based on character count */
         .fai-chun.vertical .char-count-1 .char-wrapper { height: 30%; }
@@ -1540,7 +1566,6 @@
         
           .fai-chun.horizontal .char-wrapper {
               height: 100%;
-              margin: 100px;
           }
           .fai-chun.horizontal .char-count-1 .char-wrapper { width: 30%; }
         .fai-chun.horizontal .char-count-2 .char-wrapper { width: calc(60% / 2); }
