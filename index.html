@@ -1105,155 +1105,77 @@
       }
 
      /**
- * Saves the Fai Chun poster as a PNG file.
- */
-async function savePoster() {
-    console.log('savePoster: Function started');
-
-    const posterElement = document.querySelector('#posterContainer .fai-chun');
-    if (!posterElement) {
-        console.error('savePoster: No poster element found in #posterContainer');
-        hideSaveModal();
-        fullscreenPreview.classList.remove('visible');
-        fullscreenActions.classList.remove('visible');
-        return;
-    }
-    console.log('savePoster: Poster element found');
-
-    try {
-        console.log('savePoster: Creating temporary container');
-        const tempContainer = document.createElement('div');
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.transform = 'scale(2)';
-        tempContainer.style.transformOrigin = 'top left';
-        document.body.appendChild(tempContainer);
-        console.log('savePoster: Temporary container appended to body');
-
-        const clonedPoster = posterElement.cloneNode(true);
-        console.log('savePoster: Poster cloned successfully');
-        tempContainer.appendChild(clonedPoster);
-
-        const computedStyle = window.getComputedStyle(posterElement);
-        clonedPoster.style.width = computedStyle.width;
-        clonedPoster.style.height = computedStyle.height;
-        clonedPoster.style.backgroundColor = isTransparentMode ? 'transparent' : selectedBackgroundColor;
-        clonedPoster.style.border = isTransparentMode ? 'none' : computedStyle.border;
-        clonedPoster.style.boxShadow = isTransparentMode ? 'none' : computedStyle.boxShadow;
-        console.log('savePoster: Cloned poster styles applied', {
-            width: clonedPoster.style.width,
-            height: clonedPoster.style.height,
-            backgroundColor: clonedPoster.style.backgroundColor,
-            border: clonedPoster.style.border,
-            boxShadow: clonedPoster.style.boxShadow
-        });
-
-        console.log('savePoster: Starting html2canvas rendering');
-        const canvas = await html2canvas(clonedPoster, {
-            backgroundColor: isTransparentMode ? null : selectedBackgroundColor,
-            scale: 2,
-            useCORS: true,
-            logging: true // Enable html2canvas logging for debugging
-        });
-        console.log('savePoster: html2canvas rendering complete, canvas created');
-        console.log('savePoster: Canvas dimensions', {
-            width: canvas.width,
-            height: canvas.height
-        });
-
-        // Check if canvas is tainted (CORS issue)
-        try {
-            canvas.toDataURL('image/png');
-            console.log('savePoster: Canvas is not tainted');
-        } catch (e) {
-            console.error('savePoster: Canvas is tainted, likely due to CORS issues with images', e);
-            throw new Error('Canvas tainted: Ensure images in processed_web_characters/ have proper CORS headers');
-        }
-
-        // Generate data URL and validate
-        const dataUrl = canvas.toDataURL('image/png');
-        console.log('savePoster: Data URL generated, length:', dataUrl.length);
-        if (!dataUrl.startsWith('data:image/png;base64,')) {
-            throw new Error('savePoster: Invalid data URL generated');
-        }
-
-        // Create download link
-        const link = document.createElement('a');
-        link.download = `fai-chun-${new Date().toISOString().split('T')[0]}.png`;
-        link.href = dataUrl;
-        link.style.display = 'none';
-        document.body.appendChild(link);
-        console.log('savePoster: Download link created and appended to DOM', {
-            hrefLength: link.href.length,
-            download: link.download,
-            isInDOM: document.body.contains(link)
-        });
-
-        // Check for CSP restrictions
-        const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-        console.log('savePoster: CSP meta tag present?', !!cspMeta, cspMeta ? cspMeta.content : 'None');
-
-        // Simulate user-initiated click with a longer delay
-        setTimeout(() => {
+         * Saves the generated Fai Chun poster as a PNG image using html2canvas.
+         * FINAL ROBUST VERSION: This version renders a prepared, off-screen clone
+         * of the original poster to guarantee a clean and accurate render, avoiding
+         * all issues with timing, visibility, and CSS conflicts.
+         */
+        async function savePoster() {
+            // 1. Target the original, stable poster element in the main document.
+            const originalPoster = document.querySelector('#posterContainer .fai-chun');
+            
+            if (!originalPoster) {
+                console.error("Save failed: Original poster element not found.");
+                hideSaveModal();
+                return;
+            }
+        
+            // 2. Create a deep clone of the element to work with.
+            const clone = originalPoster.cloneNode(true);
+        
+            // 3. Prepare the clone for off-screen rendering.
+            // This makes it fully measurable by the browser without being visible.
+            clone.style.position = 'absolute';
+            clone.style.left = '-9999px'; // Position it far off-screen.
+            clone.style.top = '0px';
+            
+            // Ensure the clone's container has the same explicit dimensions as the original.
+            const originalRect = originalPoster.getBoundingClientRect();
+            clone.style.width = `${originalRect.width}px`;
+            clone.style.height = `${originalRect.height}px`;
+        
+            // 4. Append the clone to the body so it becomes part of the document layout.
+            document.body.appendChild(clone);
+        
+            // 5. Force absolute pixel dimensions on the clone's children.
+            // We measure the children of the ORIGINAL element to get the correct dimensions.
+            const originalCharWrappers = originalPoster.querySelectorAll('.char-wrapper');
+            const cloneCharWrappers = clone.querySelectorAll('.char-wrapper');
+        
+            originalCharWrappers.forEach((originalWrapper, index) => {
+                const cloneWrapper = cloneCharWrappers[index];
+                if (cloneWrapper) {
+                    const rect = originalWrapper.getBoundingClientRect();
+                    cloneWrapper.style.height = `${rect.height}px`;
+                    cloneWrapper.style.flexBasis = `${rect.height}px`;
+                    cloneWrapper.style.width = `${rect.width}px`; // Also lock in the width.
+                }
+            });
+        
             try {
-                const clickEvent = new MouseEvent('click', {
-                    view: window,
-                    bubbles: true,
-                    cancelable: true
+                // 6. Render the prepared, off-screen clone.
+                const canvas = await html2canvas(clone, {
+                    backgroundColor: null,
+                    scale: 3
                 });
-                link.dispatchEvent(clickEvent);
-                console.log('savePoster: Download link clicked via dispatchEvent');
-            } catch (clickError) {
-                console.error('savePoster: Error dispatching click event', clickError);
-                // Fallback: Create a manual download button
-                console.log('savePoster: Creating manual download button');
-                const manualButton = document.createElement('button');
-                manualButton.textContent = 'Manually Download Poster';
-                manualButton.style.position = 'fixed';
-                manualButton.style.top = '50%';
-                manualButton.style.left = '50%';
-                manualButton.style.transform = 'translate(-50%, -50%)';
-                manualButton.style.padding = '10px 20px';
-                manualButton.style.backgroundColor = '#dc2626';
-                manualButton.style.color = 'white';
-                manualButton.style.border = 'none';
-                manualButton.style.borderRadius = '5px';
-                manualButton.style.cursor = 'pointer';
-                manualButton.style.zIndex = '3000';
-                manualButton.onclick = () => {
-                    link.click();
-                    console.log('savePoster: Manual download button clicked');
-                    document.body.removeChild(manualButton);
-                };
-                document.body.appendChild(manualButton);
-                alert('Automatic download failed. Click the "Manually Download Poster" button to save the image, or right-click the poster and select "Save Image As".');
+                
+                // 7. Trigger the download.
+                const link = document.createElement('a');
+                link.download = 'fai-chun.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+        
+            } catch (error) {
+                console.error("Error during html2canvas rendering:", error);
+            } finally {
+                // 8. CRITICAL: Clean up by removing the clone from the DOM.
+                document.body.removeChild(clone);
+                
+                // Hide any modals that might be open.
+                hideSaveModal();
+                hidePreview();
             }
-        }, 200); // Increased to 200ms delay
-
-        // Fallback check after 1.5 seconds
-        setTimeout(() => {
-            if (document.hasFocus()) {
-                console.log('savePoster: Window still focused, download may have failed');
-                alert('Download may have been blocked. Please check your browser settings, click the manual download button, or right-click the poster and select "Save Image As".');
-            } else {
-                console.log('savePoster: Window lost focus, download likely succeeded');
-            }
-        }, 1500);
-
-        // Clean up
-        document.body.removeChild(tempContainer);
-        document.body.removeChild(link);
-        console.log('savePoster: Temporary container and link removed');
-    } catch (error) {
-        console.error('savePoster: Error during save process', error);
-        alert('Failed to save poster: ' + error.message + '. Please check the console for details or try a different browser.');
-    } finally {
-        console.log('savePoster: Closing modals in finally block');
-        hideSaveModal();
-        fullscreenPreview.classList.remove('visible');
-        fullscreenActions.classList.remove('visible');
-    }
-}
+        }
 
       document.addEventListener('DOMContentLoaded', () => {
           fetch('character_map.json')
