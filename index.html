@@ -1498,33 +1498,6 @@
             }
         }
       
-      const sizingStyles = `
-        /* --- Vertical Sizing (Percentage-Based) --- */
-        /* This rule sets the width for all vertical characters */
-        .fai-chun.vertical .char-wrapper {
-          width: 100%;
-        }
-        /* These rules dynamically set the height based on character count */
-        .fai-chun.vertical .char-count-1 .char-wrapper { height: 30%; }
-        .fai-chun.vertical .char-count-2 .char-wrapper { height: calc(60% / 2); }
-        .fai-chun.vertical .char-count-3 .char-wrapper { height: calc(65% / 3); }
-        .fai-chun.vertical .char-count-4 .char-wrapper { height: calc(65% / 4); }
-        .fai-chun.vertical .char-count-5 .char-wrapper { height: calc(65% / 5); }
-        .fai-chun.vertical .char-count-6 .char-wrapper { height: calc(65% / 6); }
-        .fai-chun.vertical .char-count-7 .char-wrapper { height: calc(65% / 7); }
-        
-          .fai-chun.horizontal .char-wrapper {
-              height: 100%;
-          }
-          .fai-chun.horizontal .char-count-1 .char-wrapper { width: 30%; }
-        .fai-chun.horizontal .char-count-2 .char-wrapper { width: calc(60% / 2); }
-        .fai-chun.horizontal .char-count-3 .char-wrapper { width: calc(65% / 3); }
-        .fai-chun.horizontal .char-count-4 .char-wrapper { width: calc(65% / 4); }
-        .fai-chun.horizontal .char-count-5 .char-wrapper { width: calc(65% / 5); }
-        .fai-chun.horizontal .char-count-6 .char-wrapper { width: calc(65% / 6); }
-        .fai-chun.horizontal .char-count-7 .char-wrapper { width: calc(65% / 7); }
-        
-      `;
       const existingStyleSheet = document.querySelector('style[data-generated="sizing"]');
       if (existingStyleSheet) existingStyleSheet.remove();
       const styleSheet = document.createElement("style");
