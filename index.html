@@ -1483,13 +1483,15 @@ for (const char of characters) {
             // Vertical: Each character takes equal vertical space
             wrapperDiv.style.height = `calc(100% / ${charCount})`;
             wrapperDiv.style.width = '100%';
+            wrapperDiv.style.aspectRatio = '3 / 4';
         } else { 
             // Horizontal: Each character takes equal horizontal space
             wrapperDiv.style.width = `calc(100% / ${charCount})`;
+            wrapperDiv.style.aspectRatio = '4 / 3';
         }
         
         // Ensure characters stay within bounds
-        wrapperDiv.style.aspectRatio = '1 / 1';
+       
         wrapperDiv.style.flexShrink = '0'; // Prevent shrinking
         wrapperDiv.style.overflow = 'hidden'; // Prevent overflow
         
