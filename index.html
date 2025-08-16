@@ -152,6 +152,25 @@
           flex-direction: row-reverse; /* Align images right-to-left */
       }
 
+            /* --- FINAL RESPONSIVE CONTAINER SIZING --- */
+
+      .fai-chun.vertical {
+        width: 25rem;             /* A good default size for desktop */
+        max-width: 90vw;          /* Ensures it never overflows the screen */
+        aspect-ratio: 480 / 640;  /* CRITICAL: This keeps the original shape */
+        border: 8px solid #facc15;/* The border for non-white backgrounds */
+      }
+      
+      .fai-chun.horizontal {
+        width: 90vw;              /* Use most of the screen width */
+        max-width: 70rem;         /* But don't let it get too wide */
+        height: 15rem;            /* A generous height for large characters */
+        border: 8px solid #facc15;/* The border */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
       .char-wrapper img {
         width: 100%;
         height: 100%;
@@ -1387,10 +1406,10 @@
       });
 
             async function generateFaiChun() {
-        // Guard clause
+        // Guard clause: Don't run if colors aren't selected or the map isn't loaded.
         if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) return;
 
-        // Get UI settings
+        // Get current settings from the UI
         let textInput = document.getElementById('chineseText').value.trim();
         const posterContainer = document.getElementById('posterContainer');
         const orientation = document.querySelector('input[name="orientation"]:checked').value;
@@ -1400,30 +1419,39 @@
             return; 
         }
 
-        // --- Core Logic ---
+        // --- Core Logic: Always rebuild from scratch ---
         posterContainer.innerHTML = '';
+        
         const faiChunContainer = document.createElement('div');
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
+        
         faiChunContainer.appendChild(imageContainer);
         posterContainer.appendChild(faiChunContainer);
         faiChunContainer.onclick = showSaveModal;
 
-        // --- Apply Container Styles ---
+        // --- Apply Styles and Classes ---
         let faiChunClass = `fai-chun ${orientation}`;
         if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
         faiChunContainer.className = faiChunClass;
 
+        // Handle background color and border visibility
         if (isTransparentMode) {
             faiChunContainer.classList.add('fai-chun-transparent');
             faiChunContainer.style.backgroundColor = '';
         } else {
             faiChunContainer.classList.remove('fai-chun-transparent');
             faiChunContainer.style.backgroundColor = selectedBackgroundColor;
+            if (selectedBackgroundColor === '#FFFFFF') {
+                faiChunContainer.style.border = 'none';
+            }
         }
+        
+        imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
 
         // --- Build and Append Characters ---
         const characters = textInput.split('');
+        const charCount = characters.length;
         const imageLoadPromises = [];
           
         for (const char of characters) {
@@ -1437,22 +1465,17 @@
                 const loadPromise = new Promise(resolve => { img.onload = resolve; });
                 imageLoadPromises.push(loadPromise);
                 
-                // --- THIS IS THE NEW LOGIC YOU REQUESTED ---
-
-                // 1. Define the large, fixed character size as a responsive "rem" unit.
-                //    '12rem' is a very large size, equivalent to ~192px on a standard screen.
-                const fixedCharSize = '12rem';
-
-                // 2. Define the large, fixed margin.
-                //    '2.5rem' is equivalent to a substantial 40px margin.
-                const fixedMargin = '2.5rem';
-
-                // 3. Set the dimensions of the character wrapper.
-                wrapperDiv.style.width = fixedCharSize;
-                wrapperDiv.style.height = fixedCharSize;
+                // --- DYNAMIC SIZING TO FIT ALL CHARACTERS ---
+                if (orientation === 'vertical') {
+                    // Each character takes up an equal fraction of the vertical space.
+                    wrapperDiv.style.height = `calc(100% / ${charCount})`;
+                } else { // Horizontal
+                    // Each character takes up an equal fraction of the horizontal space.
+                    wrapperDiv.style.width = `calc(100% / ${charCount})`;
+                }
                 
-                // 4. Set the margin around the character wrapper.
-                wrapperDiv.style.margin = fixedMargin;
+                // This command makes it a perfect square.
+                wrapperDiv.style.aspectRatio = '1 / 1';
                 
                 wrapperDiv.appendChild(img);
                 imageContainer.appendChild(wrapperDiv);
@@ -1461,6 +1484,20 @@
                 console.error("Failed to create colored character:", error);
             }
         }
+
+        // --- DYNAMIC SPACING CALCULATION (AFTER CHARACTERS ARE CREATED) ---
+        const firstCharacter = imageContainer.querySelector('.char-wrapper');
+        if (firstCharacter) {
+            // Measure the final pixel size of a character
+            const rect = firstCharacter.getBoundingClientRect();
+            
+            // Calculate the gap based on your 100px margin / 480px character ratio
+            const gapValue = (100 / 480) * rect.width;
+            
+            // Apply the calculated space between the characters
+            imageContainer.style.gap = `${gapValue}px`;
+        }
+
         return Promise.all(imageLoadPromises);
       }
 
