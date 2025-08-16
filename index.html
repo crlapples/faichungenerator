@@ -1469,14 +1469,14 @@
                 if (orientation === 'vertical' && characters.length > 0) {
                     // FIX for Vertical Overflow & Squishing:
                     wrapperDiv.style.aspectRatio = '1 / 1';
-                    wrapperDiv.style.width = '95%';
+                    wrapperDiv.style.width = '100%';
                     // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
                     wrapperDiv.style.flexShrink = '0';
                 } else {
                     // FIX for Horizontal Overflow:
                     // Set a minimum width of 0, which allows the item to shrink
                     // below its fixed 10rem size when padding is added.
-                    wrapperDiv.style.height = '95%';
+                    wrapperDiv.style.height = '100%';
                     wrapperDiv.style.minWidth = '0.5rem';
                     wrapperDiv.style.minHeight = '2rem';
                     wrapperDiv.style.flexShrink = '0';
@@ -1526,7 +1526,8 @@
         /* --- Vertical Sizing (Percentage-Based) --- */
         /* This rule sets the width for all vertical characters */
         .fai-chun.vertical .char-wrapper {
-          width: 90%;
+          width: 100%;
+          margin: 100px;
         }
         /* These rules dynamically set the height based on character count */
         .fai-chun.vertical .char-count-1 .char-wrapper { height: 30%; }
@@ -1536,34 +1537,19 @@
         .fai-chun.vertical .char-count-5 .char-wrapper { height: calc(65% / 5); }
         .fai-chun.vertical .char-count-6 .char-wrapper { height: calc(65% / 6); }
         .fai-chun.vertical .char-count-7 .char-wrapper { height: calc(65% / 7); }
-
-        .fai-chun.horizontal .fai-chun-text {
-              align-items: center;
-              height: 100%;
-              width: 100%;
-          }
+        
           .fai-chun.horizontal .char-wrapper {
-              width: 10rem;
-              height: 10rem;
-              flex-shrink: 1;
-              flex-grow: 0;
-              min-width: 0;
-          }
-          .fai-chun.horizontal .char-wrapper img {
-              width: 100%;
               height: 100%;
-              object-fit: contain;
+              margin: 100px;
           }
-
-        /* --- Horizontal Sizing (Fixed 'rem' Size with Shrinking) --- */
-        .fai-chun.horizontal .char-wrapper {
-          /* Set a large, fixed base size (using 8rem is a good balance) */
-          width: 10rem;
-          height: 10rem;
-          /* Allow the item to shrink if space is needed, but not grow */
-          flex-shrink: 1;
-          flex-grow: 0;
-        }
+          .fai-chun.horizontal .char-count-1 .char-wrapper { width: 30%; }
+        .fai-chun.horizontal .char-count-2 .char-wrapper { width: calc(60% / 2); }
+        .fai-chun.horizontal .char-count-3 .char-wrapper { width: calc(65% / 3); }
+        .fai-chun.horizontal .char-count-4 .char-wrapper { width: calc(65% / 4); }
+        .fai-chun.horizontal .char-count-5 .char-wrapper { width: calc(65% / 5); }
+        .fai-chun.horizontal .char-count-6 .char-wrapper { width: calc(65% / 6); }
+        .fai-chun.horizontal .char-count-7 .char-wrapper { width: calc(65% / 7); }
+        
       `;
       const existingStyleSheet = document.querySelector('style[data-generated="sizing"]');
       if (existingStyleSheet) existingStyleSheet.remove();
