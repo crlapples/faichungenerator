@@ -1120,80 +1120,89 @@
       }
 
      async function savePoster() {
-    // 1. Target the original poster element
     const originalPoster = document.querySelector('#posterContainer .fai-chun');
     
     if (!originalPoster) {
         console.error("Save failed: Original poster element not found.");
+        alert("No poster found to save. Please generate a poster first.");
         hideSaveModal();
         return;
     }
 
-    // 2. Create a deep clone of the poster
-    const clone = originalPoster.cloneNode(true);
-
-    // 3. Create a temporary off-screen container
+    // Create a clean container to isolate rendering
     const offscreenContainer = document.createElement('div');
     offscreenContainer.style.position = 'absolute';
     offscreenContainer.style.left = '-9999px';
     offscreenContainer.style.top = '0';
-    offscreenContainer.style.transform = 'none'; // Reset any transforms
-    offscreenContainer.style.opacity = '1'; // Ensure visibility for rendering
-    offscreenContainer.style.pointerEvents = 'none'; // Prevent interaction
+    offscreenContainer.style.transform = 'none';
+    offscreenContainer.style.opacity = '1';
+    offscreenContainer.style.pointerEvents = 'none';
 
-    // 4. Append clone to off-screen container
+    // Clone only the .fai-chun element
+    const clone = originalPoster.cloneNode(true);
     offscreenContainer.appendChild(clone);
     document.body.appendChild(offscreenContainer);
 
-    // 5. Force explicit dimensions and styles
     const originalRect = originalPoster.getBoundingClientRect();
+    offscreenContainer.style.width = `${originalRect.width}px`;
+    offscreenContainer.style.height = `${originalRect.height}px`;
+    offscreenContainer.style.overflow = 'hidden';
     clone.style.width = `${originalRect.width}px`;
     clone.style.height = `${originalRect.height}px`;
     clone.style.margin = '0';
-    clone.style.padding = originalPoster.style.padding; // Preserve padding
+    clone.style.padding = originalPoster.style.padding;
     clone.style.boxSizing = 'border-box';
 
-    // 6. Ensure images are fully loaded in the clone
+    // Verify all images use data URLs
     const images = clone.querySelectorAll('img');
     const loadPromises = Array.from(images).map(img => {
-        if (img.complete) return Promise.resolve();
+        if (img.src.startsWith('data:')) {
+            return Promise.resolve(); // Data URLs are already loaded
+        }
         return new Promise(resolve => {
             img.onload = resolve;
             img.onerror = () => {
-                console.warn(`Image failed to load: ${img.src}`);
-                resolve(); // Continue even if an image fails
+                console.warn(`Image failed to load: ${img.src}. Replacing with placeholder.`);
+                img.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='; // 1x1 transparent pixel
+                resolve();
             };
         });
     });
 
     try {
-        // 7. Wait for all images to load
         await Promise.all(loadPromises);
 
-        // 8. Force a reflow to ensure the clone is fully rendered
-        clone.offsetHeight; // Trigger reflow
+        if (clone.querySelectorAll('img').length === 0) {
+            console.error("No images to render. Cannot save poster.");
+            alert("No valid images found in the poster. Please try again.");
+            return;
+        }
 
-        // 9. Render the clone with html2canvas
+        clone.offsetHeight; // Trigger reflow
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         const canvas = await html2canvas(clone, {
             backgroundColor: isTransparentMode ? null : selectedBackgroundColor,
-            scale: 3, // High resolution
-            useCORS: true, // Handle cross-origin images
-            logging: false, // Disable logging for cleaner console
+            scale: 3,
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
             windowWidth: originalRect.width,
             windowHeight: originalRect.height
         });
 
-        // 10. Trigger the download
+        const dataURL = canvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.download = 'fai-chun.png';
-        link.href = canvas.toDataURL('image/png');
+        link.href = dataURL;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
 
     } catch (error) {
         console.error("Error during html2canvas rendering:", error);
-        alert("Failed to save the poster. Please try again.");
+        alert("Failed to save the poster. Please check the console for errors.");
     } finally {
-        // 11. Clean up
         document.body.removeChild(offscreenContainer);
         hideSaveModal();
     }
