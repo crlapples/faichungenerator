@@ -171,19 +171,11 @@
         overflow: hidden;
       }
 
-      .char-wrapper {
-    position: relative;
-    flex-shrink: 0;
-    overflow: hidden;
-    aspect-ratio: 1 / 1; /* This ensures 1:1 ratio */
-}
-
-.char-wrapper img {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* This ensures the image maintains aspect ratio */
-}
+      .char-wrapper img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
 
       #backgroundSelector {
         position: relative;
@@ -617,13 +609,13 @@
         max-height: 100%;
       }
       #fullscreenContent .fai-chun.vertical {
-        width: 4rem;             /* A good default size for desktop */
+        width: 5rem;             /* A good default size for desktop */
         max-width: 90vw;          /* Ensures it never overflows the screen */
         border: 8px solid #facc15;/* The border for non-white backgrounds */
       }
       
       #fullscreenContent .fai-chun.horizontal {
-        height: 4rem;            /* A generous height for large characters */
+        height: 5rem;            /* A generous height for large characters */
         border: 8px solid #facc15;/* The border */
         display: flex;
         align-items: center;
@@ -1068,42 +1060,31 @@
               element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
       }
-      async function savePoster() {
-    const posterElement = document.querySelector('#posterContainer .fai-chun');
+     /**
+ * Saves the generated Fai Chun poster as a PNG image using html2canvas.
+ * Directly captures the existing poster container without cloning.
+ */
+async function savePoster() {
+    // 1. Target the poster container element
+    const posterContainer = document.querySelector('#posterContainer .fai-chun');
     
-    if (!posterElement) {
+    if (!posterContainer) {
         console.error("Save failed: Poster container not found.");
         hideSaveModal();
         return;
     }
 
     try {
-        // Calculate dimensions based on orientation
-        const isVertical = posterElement.classList.contains('vertical');
-        let width, height;
-        
-        if (isVertical) {
-            // For vertical posters, maintain width and calculate height based on content
-            width = posterElement.offsetWidth;
-            height = posterElement.scrollHeight;
-        } else {
-            // For horizontal posters, maintain height and calculate width based on content
-            height = posterElement.offsetHeight;
-            width = posterElement.scrollWidth;
-        }
-
-        const canvas = await html2canvas(posterElement, {
+        // 2. Render the poster directly with html2canvas
+        const canvas = await html2canvas(posterContainer, {
             backgroundColor: isTransparentMode ? null : selectedBackgroundColor,
-            scale: window.innerWidth <= 480 ? 2 : 3,
-            width: width,
-            height: height,
+            scale: window.innerWidth <= 480 ? 2 : 3, // Higher quality for desktop
             useCORS: true,
             logging: true,
-            allowTaint: true,
-            windowWidth: width,
-            windowHeight: height
+            allowTaint: true
         });
 
+        // 3. Trigger the download
         const link = document.createElement('a');
         link.download = 'fai-chun.png';
         link.href = canvas.toDataURL('image/png');
@@ -1112,6 +1093,7 @@
     } catch (error) {
         console.error("Error during html2canvas rendering:", error);
     } finally {
+        // 4. Clean up
         hideSaveModal();
         hidePreview();
     }
@@ -1413,6 +1395,8 @@
 for (const char of characters) {
     try {
         const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
+        const img = document.createElement('img');
+        img.src = coloredImageDataUrl;
         const wrapperDiv = document.createElement('div');
         wrapperDiv.className = 'char-wrapper';
 
@@ -1428,18 +1412,11 @@ for (const char of characters) {
             wrapperDiv.style.width = `calc(90% / ${charCount})`;
         }
         
-        // Inside the character creation loop:
-        wrapperDiv.style.position = 'relative';
+        // Ensure characters stay within bounds
         wrapperDiv.style.aspectRatio = '1 / 1';
-        wrapperDiv.style.flexShhrink = '0';
-        wrapperDiv.style.overflow = 'hidden';
+        wrapperDiv.style.flexShrink = '0'; // Prevent shrinking
+        wrapperDiv.style.overflow = 'hidden'; // Prevent overflow
         
-        const img = document.createElement('img');
-        img.style.position = 'absolute';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'contain';
-        img.src = coloredImageDataUrl;
         wrapperDiv.appendChild(img);
         imageContainer.appendChild(wrapperDiv);
     } catch (error) {
