@@ -1108,7 +1108,7 @@
  * Saves the Fai Chun poster as a PNG file.
  */
 async function savePoster() {
-    console.log('savePoster: Function started'); // Debug: Confirm function is called
+    console.log('savePoster: Function started');
 
     const posterElement = document.querySelector('#posterContainer .fai-chun');
     if (!posterElement) {
@@ -1118,25 +1118,22 @@ async function savePoster() {
         fullscreenActions.classList.remove('visible');
         return;
     }
-    console.log('savePoster: Poster element found'); // Debug: Confirm element exists
+    console.log('savePoster: Poster element found');
 
     try {
-        console.log('savePoster: Creating temporary container'); // Debug: Start temp container setup
-        // Create a temporary container to render the poster at high resolution
+        console.log('savePoster: Creating temporary container');
         const tempContainer = document.createElement('div');
         tempContainer.style.position = 'absolute';
-        tempContainer.style.left = '-9999px'; // Move off-screen
-        tempContainer.style.transform = 'scale(2)'; // Scale up for higher resolution
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.transform = 'scale(2)';
         tempContainer.style.transformOrigin = 'top left';
         document.body.appendChild(tempContainer);
-        console.log('savePoster: Temporary container appended to body'); // Debug: Confirm append
+        console.log('savePoster: Temporary container appended to body');
 
-        // Clone the poster and append to temporary container
         const clonedPoster = posterElement.cloneNode(true);
-        console.log('savePoster: Poster cloned successfully'); // Debug: Confirm cloning
+        console.log('savePoster: Poster cloned successfully');
         tempContainer.appendChild(clonedPoster);
 
-        // Ensure the clone has the same styles
         const computedStyle = window.getComputedStyle(posterElement);
         clonedPoster.style.width = computedStyle.width;
         clonedPoster.style.height = computedStyle.height;
@@ -1149,37 +1146,58 @@ async function savePoster() {
             backgroundColor: clonedPoster.style.backgroundColor,
             border: clonedPoster.style.border,
             boxShadow: clonedPoster.style.boxShadow
-        }); // Debug: Log applied styles
+        });
 
-        // Capture the poster using html2canvas
-        console.log('savePoster: Starting html2canvas rendering'); // Debug: Before html2canvas
+        console.log('savePoster: Starting html2canvas rendering');
         const canvas = await html2canvas(clonedPoster, {
             backgroundColor: isTransparentMode ? null : selectedBackgroundColor,
-            scale: 2, // Match the transform scale for crisp output
-            useCORS: true // Ensure images load correctly
+            scale: 2,
+            useCORS: true
         });
-        console.log('savePoster: html2canvas rendering complete, canvas created'); // Debug: Confirm canvas creation
+        console.log('savePoster: html2canvas rendering complete, canvas created');
         console.log('savePoster: Canvas dimensions', {
             width: canvas.width,
             height: canvas.height
-        }); // Debug: Log canvas size
+        });
 
-        // Create a download link
+        // Generate data URL and check its validity
+        const dataUrl = canvas.toDataURL('image/png');
+        console.log('savePoster: Data URL generated, length:', dataUrl.length);
+        if (!dataUrl.startsWith('data:image/png;base64,')) {
+            throw new Error('savePoster: Invalid data URL generated');
+        }
+
+        // Create and append download link to DOM
         const link = document.createElement('a');
         link.download = `fai-chun-${new Date().toISOString().split('T')[0]}.png`;
-        link.href = canvas.toDataURL('image/png');
-        console.log('savePoster: Download link created', { href: link.href.substring(0, 50) + '...' }); // Debug: Log partial data URL
+        link.href = dataUrl;
+        document.body.appendChild(link); // Append to DOM
+        console.log('savePoster: Download link created and appended to DOM', {
+            hrefLength: link.href.length,
+            download: link.download
+        });
+
+        // Attempt to trigger download
         link.click();
-        console.log('savePoster: Download link clicked'); // Debug: Confirm link click
+        console.log('savePoster: Download link clicked');
+
+        // Fallback: Prompt user if download doesn't start
+        setTimeout(() => {
+            if (!document.hasFocus()) {
+                console.log('savePoster: Browser may have blocked download; window still focused');
+                alert('Download may have been blocked. Please check your browser settings or try right-clicking the image and selecting "Save Image As".');
+            }
+        }, 1000);
 
         // Clean up
         document.body.removeChild(tempContainer);
-        console.log('savePoster: Temporary container removed'); // Debug: Confirm cleanup
+        document.body.removeChild(link);
+        console.log('savePoster: Temporary container and link removed');
     } catch (error) {
-        console.error('savePoster: Error during save process', error); // Debug: Log any errors
+        console.error('savePoster: Error during save process', error);
+        alert('Failed to save poster. Please try again or check the console for details.');
     } finally {
-        // Hide the modal and preview after saving
-        console.log('savePoster: Closing modals in finally block'); // Debug: Confirm modal closing
+        console.log('savePoster: Closing modals in finally block');
         hideSaveModal();
         fullscreenPreview.classList.remove('visible');
         fullscreenActions.classList.remove('visible');
