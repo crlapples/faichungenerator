@@ -654,14 +654,6 @@
         .title {
           font-size: 1.5rem;
         }
-        .fai-chun.vertical {
-          width: 8rem;
-          height: 36rem;
-        }
-        .fai-chun.horizontal {
-          max-width: 36rem;
-          height: 8rem;
-        }
         #textColorSelector.visible-flex {
           max-height: unset;
         }
@@ -687,6 +679,50 @@
                 /* --- Tablet Style for Spacing Selector --- */
         #spacingSelector .radio-group {
           gap: 1.25rem;
+        }
+      }
+              /* --- NEW: RESPONSIVE OVERRIDES FOR FIXED-PIXEL LAYOUT --- */
+
+      /* --- Tablet Styles (screens smaller than 768px) --- */
+      @media (max-width: 768px) {
+        /* Target the outer container set by JavaScript */
+        .fai-chun {
+          /* Reduce the margin/padding */
+          padding: 30px !important;
+        }
+
+        /* Target the inner content area set by JavaScript */
+        .fai-chun .fai-chun-text {
+          /* Override the fixed pixel sizes with responsive ones */
+          width: 85vw !important;  /* Make width 85% of the viewport width */
+          height: auto !important; /* Let height adjust automatically */
+        }
+        
+        .fai-chun.vertical .fai-chun-text {
+            /* For vertical, maintain a tall aspect ratio */
+            aspect-ratio: 480 / 640;
+        }
+
+        .fai-chun.horizontal .fai-chun-text {
+            /* For horizontal, calculate width based on character count in JS, so we adjust height */
+            width: auto !important;
+            height: 40vw !important; /* Make height 40% of the viewport width */
+        }
+      }
+
+      /* --- Mobile Styles (screens smaller than 480px) --- */
+      @media (max-width: 480px) {
+        .fai-chun {
+          /* Further reduce the margin/padding for small phones */
+          padding: 15px !important;
+        }
+
+        .fai-chun .fai-chun-text {
+          width: 90vw !important; /* Use even more of the screen width */
+        }
+
+        .fai-chun.horizontal .fai-chun-text {
+            height: 50vw !important; /* Make horizontal a bit taller on mobile */
         }
       }
       @media (max-width: 480px) {
@@ -732,16 +768,6 @@
         }
         #inputSection.visible {
             max-height: unset;
-        }
-        .fai-chun.vertical {
-          width: 7rem;
-          height: 32rem;
-          border-width: 6px;
-        }
-        .fai-chun.horizontal {
-          max-width: 32rem;
-          height: 7rem;
-          border-width: 6px;
         }
         #orientationSelector .radio-group,
         #directionSelector .radio-group {
