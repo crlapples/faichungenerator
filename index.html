@@ -1376,7 +1376,7 @@
           });
       });
 
-      async function generateFaiChun() {
+            async function generateFaiChun() {
         // Guard clause: Don't run if colors aren't selected or the map isn't loaded.
         if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) return;
 
@@ -1406,6 +1406,7 @@
         if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
         faiChunContainer.className = faiChunClass;
 
+        // Handle background color
         if (isTransparentMode) {
             faiChunContainer.classList.add('fai-chun-transparent');
             faiChunContainer.style.backgroundColor = '';
@@ -1414,13 +1415,26 @@
             faiChunContainer.style.backgroundColor = selectedBackgroundColor;
         }
 
+        // Handle padding
         imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
         
+        // --- Spacing Logic (Using the existing Spacing Selector) ---
+        // This calculates the gap based on your UI radio buttons.
+        let finalGapValue = "0";
+        switch (characterSpacing) {
+            case 'none':    finalGapValue = '0.5rem'; break;
+            case 'quarter': finalGapValue = orientation === 'vertical' ? '1.5vh' : '1.5vw'; break;
+            case 'third':   finalGapValue = orientation === 'vertical' ? '2vh' : '2vw'; break;
+            case 'half':    finalGapValue = orientation === 'vertical' ? '3vh' : '3vw'; break;
+            case 'full':    finalGapValue = orientation === 'vertical' ? '5vh' : '5vw'; break;
+        }
+        imageContainer.style.gap = finalGapValue;
+
         // --- Build and Append Characters ---
         const characters = textInput.split('');
         const imageLoadPromises = [];
           
-                for (const char of characters) {
+        for (const char of characters) {
             try {
                 const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
                 const img = document.createElement('img');
@@ -1431,41 +1445,29 @@
                 const loadPromise = new Promise(resolve => {
                     img.onload = resolve;
                 });
-                imageLoadPromises.push(loadPromise)
+                imageLoadPromises.push(loadPromise);
                 
-                // --- 1. SET THE FIXED SIZE ---
-                const fixedCharSize = '10rem'; // This sets the base size
+                // --- ROBUST PROPORTIONAL SIZING LOGIC ---
+                // This makes the characters fit perfectly inside their container.
                 if (orientation === 'vertical') {
-                    wrapperDiv.style.height = fixedCharSize;
+                    // Make the character's width 90% of the container's width
+                    wrapperDiv.style.width = '90%'; 
                 } else { // Horizontal
-                    wrapperDiv.style.width = fixedCharSize;
+                    // Make the character's height 90% of the container's height
+                    wrapperDiv.style.height = '90%';
                 }
-                wrapperDiv.style.aspectRatio = '1 / 1'; // Make it a square
-
-                // --- 2. APPEND THE ELEMENT TO THE DOCUMENT FIRST ---
-                // We MUST do this before we can measure it.
+                // This command makes it a perfect square.
+                wrapperDiv.style.aspectRatio = '1 / 1';
+                
                 wrapperDiv.appendChild(img);
                 imageContainer.appendChild(wrapperDiv);
-
-                // --- 3. MEASURE ITS ACTUAL PIXEL SIZE ---
-                // getBoundingClientRect() gets the final, rendered size (e.g., 114px).
-                const rect = wrapperDiv.getBoundingClientRect();
-
-                // --- 4. CALCULATE THE MARGIN IN JAVASCRIPT ---
-                // This performs the calculation you want: 5/24 of the true width.
-                const marginInPixels = (5 / 24) * rect.width;
-
-                // --- 5. APPLY THE FINAL PIXEL VALUE AS THE MARGIN ---
-                // We add the "px" unit to the calculated number.
-                wrapperDiv.style.marginTop = `${marginInPixels}px`;
-                wrapperDiv.style.marginBottom = `${marginInPixels}px`;
-                wrapperDiv.style.marginLeft = `${marginInPixels}px`;
-                wrapperDiv.style.marginRight = `${marginInPixels}px`;
 
             } catch (error) {
                 console.error("Failed to create colored character:", error);
             }
         }
+        return Promise.all(imageLoadPromises);
+      }
 
       async function handleCreateClick() {
           // 1. Generate the Fai Chun and wait for all images to be fully loaded.
@@ -1497,12 +1499,6 @@
                 history.pushState({preview: 'open'}, 'Preview');
             }
         }
-      
-      const existingStyleSheet = document.querySelector('style[data-generated="sizing"]');
-      if (existingStyleSheet) existingStyleSheet.remove();
-      const styleSheet = document.createElement("style");
-      styleSheet.innerText = sizingStyles;
-      document.head.appendChild(styleSheet);
     </script>
 
     <div id="modalOverlay">
