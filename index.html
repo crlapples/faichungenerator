@@ -1376,7 +1376,6 @@
           });
       });
 
-            // --- Replace your entire old function with this new, corrected version ---
       async function generateFaiChun() {
         // Guard clause: Don't run if colors aren't selected or the map isn't loaded.
         if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) return;
@@ -1386,13 +1385,12 @@
         const posterContainer = document.getElementById('posterContainer');
         const orientation = document.querySelector('input[name="orientation"]:checked').value;
         
-        // If there's no text, clear the poster and stop.
         if (!textInput) { 
             posterContainer.innerHTML = ''; 
             return; 
         }
 
-        // --- Core Logic: Always rebuild from scratch for 100% accuracy ---
+        // --- Core Logic: Always rebuild from scratch ---
         posterContainer.innerHTML = '';
         
         const faiChunContainer = document.createElement('div');
@@ -1404,13 +1402,10 @@
         faiChunContainer.onclick = showSaveModal;
 
         // --- Apply Styles and Classes ---
-
-        // 1. Set orientation and direction classes
         let faiChunClass = `fai-chun ${orientation}`;
         if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
         faiChunContainer.className = faiChunClass;
 
-        // 2. Set background color or transparency
         if (isTransparentMode) {
             faiChunContainer.classList.add('fai-chun-transparent');
             faiChunContainer.style.backgroundColor = '';
@@ -1419,37 +1414,10 @@
             faiChunContainer.style.backgroundColor = selectedBackgroundColor;
         }
 
-        // 3. Set padding and character count class
         imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
-        imageContainer.className = `fai-chun-text char-count-${textInput.length}`;
-
-        // 4. Set character spacing (gap)
-        let finalGapValue = "0";
-        if (orientation === 'horizontal') {
-            imageContainer.style.justifyContent = 'center';
-            imageContainer.style.alignItems = 'center';
-             switch (characterSpacing) {
-                case 'none':    finalGapValue = '1rem'; break; // A reasonable default gap
-                case 'quarter': finalGapValue = '1.5vw'; break;
-                case 'third':   finalGapValue = '2vw'; break;
-                case 'half':    finalGapValue = '3vw'; break;
-                case 'full':    finalGapValue = '5vw'; break;
-            }
-        } else { // Vertical
-            imageContainer.style.justifyContent = 'center';
-            switch (characterSpacing) {
-                case 'none':    finalGapValue = '1rem'; break;
-                case 'quarter': finalGapValue = '1.5vh'; break;
-                case 'third':   finalGapValue = '2vh'; break;
-                case 'half':    finalGapValue = '3vh'; break;
-                case 'full':    finalGapValue = '5vh'; break;
-            }
-        }
-        imageContainer.style.gap = finalGapValue;
         
         // --- Build and Append Characters ---
         const characters = textInput.split('');
-
         const imageLoadPromises = [];
           
         for (const char of characters) {
@@ -1464,53 +1432,34 @@
                     img.onload = resolve;
                 });
                 imageLoadPromises.push(loadPromise)
-                // --- FIX STARTS HERE ---
-                // This logic overrides your static CSS to handle dynamic padding and fix save issues.
-                        for (const char of characters) {
-            try {
-                // ... (your existing code to create the image) ...
-                const wrapperDiv = document.createElement('div');
-                wrapperDiv.className = 'char-wrapper';
+                
+                // --- FIXED SIZING LOGIC ---
 
-                // --- NEW: FIXED SIZING LOGIC ---
-
-                // 1. Define the large, fixed size for the characters here.
-                //    '10rem' is a good large size (~160px). You can adjust this value.
+                // 1. Define the large, fixed size for the characters. '10rem' is a good start.
                 const fixedCharSize = '10rem';
 
-                // 2. Apply the fixed size.
-                //    For a vertical column, we define the height.
-                //    For a horizontal row, we define the width.
+                // 2. Apply the fixed size based on orientation.
                 if (orientation === 'vertical') {
                     wrapperDiv.style.height = fixedCharSize;
                 } else { // Horizontal
                     wrapperDiv.style.width = fixedCharSize;
                 }
                 
-                // 3. The aspect-ratio rule makes the other dimension match, creating a perfect square.
+                // 3. Make it a perfect square.
                 wrapperDiv.style.aspectRatio = '1 / 1';
 
-
-                // 4. Calculate the margin based on the fixed size.
-                //    We create a CSS 'calc()' string to do the math.
+                // 4. Calculate the proportional margin using a CSS calc() string.
                 const marginValue = `calc(${fixedCharSize} * 5 / 24)`;
 
-                // 5. Apply the calculated margin.
+                // 5. Apply the margin to all sides for consistent spacing.
                 wrapperDiv.style.marginTop = marginValue;
                 wrapperDiv.style.marginBottom = marginValue;
                 wrapperDiv.style.marginLeft = marginValue;
                 wrapperDiv.style.marginRight = marginValue;
 
-
                 wrapperDiv.appendChild(img);
                 imageContainer.appendChild(wrapperDiv);
 
-            } catch (error) {
-                console.error("Failed to create colored character:", error);
-            }
-        }
-                wrapperDiv.appendChild(img);
-                imageContainer.appendChild(wrapperDiv);
             } catch (error) {
                 console.error("Failed to create colored character:", error);
             }
