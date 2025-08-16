@@ -1582,18 +1582,26 @@ function applyCharacterSpacing(orientation, spacing, container) {
 
     // --- Vertical Spacing Logic ---
     } else if (orientation === 'vertical') {
-        // The proportional vertical logic remains the same as it doesn't cause overflow
         const firstCharacter = characters[0];
-        if (!firstCharacter) return;
-
         const spacingMultipliers = {
             none: 0, quarter: 0.25, third: 0.33, half: 0.5, full: 1.0
         };
         const multiplier = spacingMultipliers[spacing] || 0;
         
+        // 1. Calculate the desired gap in pixels
         const rect = firstCharacter.getBoundingClientRect();
         const gapValue = rect.height * multiplier;
+        
+        // 2. Apply the gap to the container
         container.style.gap = `${gapValue}px`;
+
+        // 3. CRITICAL FIX: Recalculate and shrink each character's height
+        // The formula is: (Total Height - Total Gap Space) / Number of Characters
+        const newHeight = `calc((100% - (${charCount - 1} * ${gapValue}px)) / ${charCount})`;
+        
+        characters.forEach(char => {
+            char.style.height = newHeight;
+        });
     }
 }
     </script>
