@@ -1387,10 +1387,10 @@
       });
 
             async function generateFaiChun() {
-        // Guard clause: Don't run if colors aren't selected or the map isn't loaded.
+        // Guard clause
         if (!((isBgColorSelected || isTransparentMode) && isTextColorSelected) || Object.keys(characterMap).length === 0) return;
 
-        // Get current settings from the UI
+        // Get UI settings
         let textInput = document.getElementById('chineseText').value.trim();
         const posterContainer = document.getElementById('posterContainer');
         const orientation = document.querySelector('input[name="orientation"]:checked').value;
@@ -1400,42 +1400,25 @@
             return; 
         }
 
-        // --- Core Logic: Always rebuild from scratch ---
+        // --- Core Logic ---
         posterContainer.innerHTML = '';
-        
         const faiChunContainer = document.createElement('div');
         const imageContainer = document.createElement('div');
         imageContainer.className = 'fai-chun-text';
-        
         faiChunContainer.appendChild(imageContainer);
         posterContainer.appendChild(faiChunContainer);
         faiChunContainer.onclick = showSaveModal;
 
-        // --- NEW: FIXED PIXEL CANVAS LOGIC ---
-        const margin = 100; // The 100px margin for all sides
-
-        // Set the outer container's padding to create the margin effect
-        faiChunContainer.style.padding = `${margin}px`;
-
-        if (orientation === 'vertical') {
-            // Set the inner content area size as requested (480x640)
-            imageContainer.style.width = '480px';
-            imageContainer.style.height = '640px';
-        } else { // Horizontal
-            // The height is fixed at 480px as requested
-            imageContainer.style.height = '480px';
-            // The width is dynamic: 480px for each character
-            imageContainer.style.width = `${textInput.length * 480}px`;
-        }
-        
-        // --- Apply Styles and Classes ---
+        // --- Apply Container Styles ---
         let faiChunClass = `fai-chun ${orientation}`;
         if (orientation === 'horizontal') faiChunClass += ` ${document.querySelector('input[name="direction"]:checked').value}`;
         faiChunContainer.className = faiChunClass;
 
         if (isTransparentMode) {
-            faiChunContainer.style.backgroundColor = 'transparent';
+            faiChunContainer.classList.add('fai-chun-transparent');
+            faiChunContainer.style.backgroundColor = '';
         } else {
+            faiChunContainer.classList.remove('fai-chun-transparent');
             faiChunContainer.style.backgroundColor = selectedBackgroundColor;
         }
 
@@ -1451,22 +1434,25 @@
                 const wrapperDiv = document.createElement('div');
                 wrapperDiv.className = 'char-wrapper';
 
-                const loadPromise = new Promise(resolve => {
-                    img.onload = resolve;
-                });
+                const loadPromise = new Promise(resolve => { img.onload = resolve; });
                 imageLoadPromises.push(loadPromise);
                 
-                // --- PROPORTIONAL SIZING LOGIC TO FIT INSIDE THE CANVAS ---
-                // This makes the characters fit perfectly inside the 480px content area.
-                if (orientation === 'vertical') {
-                    // Make the character's width 95% of the 480px canvas width
-                    wrapperDiv.style.width = '95%'; 
-                } else { // Horizontal
-                    // Make the character's height 95% of the 480px canvas height
-                    wrapperDiv.style.height = '95%';
-                }
-                // This command makes it a perfect square.
-                wrapperDiv.style.aspectRatio = '1 / 1';
+                // --- THIS IS THE NEW LOGIC YOU REQUESTED ---
+
+                // 1. Define the large, fixed character size as a responsive "rem" unit.
+                //    '12rem' is a very large size, equivalent to ~192px on a standard screen.
+                const fixedCharSize = '12rem';
+
+                // 2. Define the large, fixed margin.
+                //    '2.5rem' is equivalent to a substantial 40px margin.
+                const fixedMargin = '2.5rem';
+
+                // 3. Set the dimensions of the character wrapper.
+                wrapperDiv.style.width = fixedCharSize;
+                wrapperDiv.style.height = fixedCharSize;
+                
+                // 4. Set the margin around the character wrapper.
+                wrapperDiv.style.margin = fixedMargin;
                 
                 wrapperDiv.appendChild(img);
                 imageContainer.appendChild(wrapperDiv);
