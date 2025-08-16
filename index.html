@@ -1401,11 +1401,9 @@ async function savePoster() {
                 if (orientation === 'vertical') {
                     // Vertical: Each character takes equal vertical space
                     wrapperDiv.style.height = `calc(100% / ${charCount})`;
-                    wrapperDiv.style.width = '100%'; // Explicitly set width
                 } else { 
                     // Horizontal: Each character takes equal horizontal space
-                    wrapperDiv.style.width = `calc(100% / ${charCount})`;
-                    wrapperDiv.style.height = '100%'; // Explicitly set height
+                wrapperDiv.style.width = `calc(100% / ${charCount})`;
                 
                 // This command makes it a perfect square.
                 wrapperDiv.style.aspectRatio = '1 / 1';
