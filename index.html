@@ -1060,86 +1060,31 @@
               element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           }
       }
-      /**
+     /**
  * Saves the generated Fai Chun poster as a PNG image using html2canvas.
- * Ensures proper alignment and margins for both vertical and horizontal posters on mobile devices.
+ * Directly captures the existing poster container without cloning.
  */
 async function savePoster() {
-    // 1. Target the original poster element
-    const originalPoster = document.querySelector('#posterContainer .fai-chun');
+    // 1. Target the poster container element
+    const posterContainer = document.querySelector('#posterContainer .fai-chun');
     
-    if (!originalPoster) {
-        console.error("Save failed: Original poster element not found.");
+    if (!posterContainer) {
+        console.error("Save failed: Poster container not found.");
         hideSaveModal();
         return;
     }
 
-    // 2. Create a deep clone of the poster
-    const clone = originalPoster.cloneNode(true);
-
-    // 3. Prepare the clone for off-screen rendering
-    clone.style.position = 'absolute';
-    clone.style.left = '-9999px';
-    clone.style.top = '0px';
-
-    // 4. Copy computed styles to preserve layout
-    const computedStyle = window.getComputedStyle(originalPoster);
-    clone.style.display = computedStyle.display;
-    clone.style.flexDirection = computedStyle.flexDirection;
-    clone.style.justifyContent = computedStyle.justifyContent;
-    clone.style.alignItems = computedStyle.alignItems;
-    clone.style.boxSizing = computedStyle.boxSizing;
-    clone.style.backgroundColor = isTransparentMode ? 'transparent' : selectedBackgroundColor;
-    clone.style.border = computedStyle.border;
-    clone.style.boxShadow = isTransparentMode ? 'none' : computedStyle.boxShadow;
-
-    // 5. Set explicit dimensions based on the original
-    const originalRect = originalPoster.getBoundingClientRect();
-    clone.style.width = `${originalRect.width}px`;
-    clone.style.height = `${originalRect.height}px`;
-
-    // 6. Apply padding to the inner text container
-    const imageContainer = clone.querySelector('.fai-chun-text');
-    if (imageContainer) {
-        imageContainer.style.padding = `${paddingTop}% ${paddingRight}% ${paddingBottom}% ${paddingLeft}%`;
-        imageContainer.style.display = computedStyle.display;
-        imageContainer.style.flexDirection = computedStyle.flexDirection;
-        imageContainer.style.justifyContent = computedStyle.justifyContent;
-        imageContainer.style.alignItems = computedStyle.alignItems;
-        imageContainer.style.gap = computedStyle.gap; // Preserve character spacing
-    }
-
-    // 7. Set dimensions and styles for character wrappers
-    const originalCharWrappers = originalPoster.querySelectorAll('.char-wrapper');
-    const cloneCharWrappers = clone.querySelectorAll('.char-wrapper');
-    originalCharWrappers.forEach((originalWrapper, index) => {
-        const cloneWrapper = cloneCharWrappers[index];
-        if (cloneWrapper) {
-            const wrapperStyle = window.getComputedStyle(originalWrapper);
-            const rect = originalWrapper.getBoundingClientRect();
-            cloneWrapper.style.height = `${rect.height}px`;
-            cloneWrapper.style.width = `${rect.width}px`;
-            cloneWrapper.style.flexBasis = wrapperStyle.flexBasis;
-            cloneWrapper.style.aspectRatio = wrapperStyle.aspectRatio;
-            cloneWrapper.style.margin = wrapperStyle.margin;
-            cloneWrapper.style.padding = wrapperStyle.padding;
-            cloneWrapper.style.display = wrapperStyle.display;
-        }
-    });
-
-    // 8. Append the clone to the body
-    document.body.appendChild(clone);
-
     try {
-        // 9. Render the clone with html2canvas
-        const canvas = await html2canvas(clone, {
+        // 2. Render the poster directly with html2canvas
+        const canvas = await html2canvas(posterContainer, {
             backgroundColor: isTransparentMode ? null : selectedBackgroundColor,
-            scale: window.innerWidth <= 480 ? 2 : 3, // Use lower scale for mobile
+            scale: window.innerWidth <= 480 ? 2 : 3, // Higher quality for desktop
             useCORS: true,
-            logging: true
+            logging: true,
+            allowTaint: true
         });
 
-        // 10. Trigger the download
+        // 3. Trigger the download
         const link = document.createElement('a');
         link.download = 'fai-chun.png';
         link.href = canvas.toDataURL('image/png');
@@ -1148,8 +1093,7 @@ async function savePoster() {
     } catch (error) {
         console.error("Error during html2canvas rendering:", error);
     } finally {
-        // 11. Clean up
-        document.body.removeChild(clone);
+        // 4. Clean up
         hideSaveModal();
         hidePreview();
     }
