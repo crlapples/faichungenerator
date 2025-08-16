@@ -1460,8 +1460,88 @@ for (const char of characters) {
         console.error("Failed to create colored character:", error);
     }
 }
+        applyCharacterSpacing(orientation, characterSpacing, imageContainer);
 
-       /**
+        return Promise.all(imageLoadPromises);
+      }
+
+      async function handleCreateClick() {
+          // 1. Generate the Fai Chun and wait for all images to be fully loaded.
+          await generateFaiChun();
+        
+          // 2. Once generation is complete, show the fullscreen popup.
+          fullscreenPopup();
+        
+          // 3. Finally, scroll the main page to the poster container.
+          scrollCreate();
+        }
+
+      function scrollCreate() {
+        const posterContainer = document.getElementById('posterContainer');
+        setTimeout(() => smoothScrollTo(posterContainer), 50);
+      }
+
+      function fullscreenPopup() {
+            const posterContainer = document.getElementById('posterContainer');
+            const posterElement = posterContainer.querySelector('.fai-chun');
+        
+            if (posterElement && fullscreenPreview && fullscreenContent) {
+                fullscreenContent.innerHTML = ''; // Clear old content
+                const clone = posterElement.cloneNode(true);
+                clone.onclick = null; // Disable save modal on the clone
+                fullscreenContent.appendChild(clone);
+                fullscreenPreview.classList.add('visible');
+                fullscreenActions.classList.remove('visible');
+                history.pushState({preview: 'open'}, 'Preview');
+
+                requestAnimationFrame(() => {
+                    // First, reset any previous transform
+                    clone.style.transform = 'none';
+        
+                    const isVertical = clone.classList.contains('vertical');
+                    
+                    // Get the actual rendered size of the cloned poster
+                    const elementWidth = clone.offsetWidth;
+                    const elementHeight = clone.offsetHeight;
+        
+                    // Get the size of the viewport (the browser window)
+                    const viewportWidth = window.innerWidth;
+                    const viewportHeight = window.innerHeight;
+
+                    let scaleFactor = 1;
+        
+                    if (isVertical) {
+                        const targetHeight = viewportHeight * 0.90; // 90% of viewport height
+                        
+                        // If the poster is shorter than the target, calculate the scale factor
+                        if (elementHeight > 0 && elementHeight < targetHeight) {
+                            const scaleFactor = targetHeight / elementHeight;
+                            clone.style.transform = `scale(${scaleFactor})`;
+                        } 
+
+                        // Your logic: Check if it's too big
+                        else if (elementHeight > targetHeight) {
+                            scaleFactor = targetHeight / elementHeight; // Calculate scale-down factor
+                            clone.style.transform = `scale(${scaleFactor})`;
+                        }
+                    } else { // It's horizontal
+                        const targetWidth = viewportWidth * 0.90; // 90% of viewport width
+        
+                        // If the poster is narrower than the target, calculate the scale factor
+                        if (elementWidth > 0 && elementWidth < targetWidth) {
+                            const scaleFactor = targetWidth / elementWidth;
+                            clone.style.transform = `scale(${scaleFactor})`;
+                        }
+
+                        else if (elementWidth > targetWidth) {
+                            scaleFactor = targetWidth / elementWidth; // Calculate scale-down factor
+                            clone.style.transform = `scale(${scaleFactor})`;
+                        }
+                    }
+                });
+            }
+        }
+        /**
  * Applies character spacing and adjusts character widths to prevent overflow.
  * @param {string} orientation - The current layout ('vertical' or 'horizontal').
  * @param {string} spacing - The selected spacing value ('none', 'quarter', etc.).
@@ -1516,84 +1596,6 @@ function applyCharacterSpacing(orientation, spacing, container) {
         container.style.gap = `${gapValue}px`;
     }
 }
-
-        return Promise.all(imageLoadPromises);
-      }
-
-      async function handleCreateClick() {
-          // 1. Generate the Fai Chun and wait for all images to be fully loaded.
-          await generateFaiChun();
-        
-          // 2. Once generation is complete, show the fullscreen popup.
-          fullscreenPopup();
-        
-          // 3. Finally, scroll the main page to the poster container.
-          scrollCreate();
-        }
-
-      function scrollCreate() {
-        const posterContainer = document.getElementById('posterContainer');
-        setTimeout(() => smoothScrollTo(posterContainer), 50);
-      }
-
-      function fullscreenPopup() {
-            const posterContainer = document.getElementById('posterContainer');
-            const posterElement = posterContainer.querySelector('.fai-chun');
-        
-            if (posterElement && fullscreenPreview && fullscreenContent) {
-                fullscreenContent.innerHTML = ''; // Clear old content
-                const clone = posterElement.cloneNode(true);
-                clone.onclick = null; // Disable save modal on the clone
-                fullscreenContent.appendChild(clone);
-                fullscreenPreview.classList.add('visible');
-                fullscreenActions.classList.remove('visible');
-                history.pushState({preview: 'open'}, 'Preview');
-
-                requestAnimationFrame(() => {
-                    // First, reset any previous transform
-                    clone.style.transform = 'none';
-        
-                    const isVertical = clone.classList.contains('vertical');
-                    
-                    // Get the actual rendered size of the cloned poster
-                    const elementWidth = clone.offsetWidth;
-                    const elementHeight = clone.offsetHeight;
-        
-                    // Get the size of the viewport (the browser window)
-                    const viewportWidth = window.innerWidth;
-                    const viewportHeight = window.innerHeight;
-        
-                    if (isVertical) {
-                        const targetHeight = viewportHeight * 0.90; // 90% of viewport height
-                        
-                        // If the poster is shorter than the target, calculate the scale factor
-                        if (elementHeight > 0 && elementHeight < targetHeight) {
-                            const scaleFactor = targetHeight / elementHeight;
-                            clone.style.transform = `scale(${scaleFactor})`;
-                        } 
-
-                        // Your logic: Check if it's too big
-                        else if (elementHeight > targetHeight) {
-                            scaleFactor = targetHeight / elementHeight; // Calculate scale-down factor
-                            clone.style.transform = `scale(${scaleFactor})`;
-                        }
-                    } else { // It's horizontal
-                        const targetWidth = viewportWidth * 0.90; // 90% of viewport width
-        
-                        // If the poster is narrower than the target, calculate the scale factor
-                        if (elementWidth > 0 && elementWidth < targetWidth) {
-                            const scaleFactor = targetWidth / elementWidth;
-                            clone.style.transform = `scale(${scaleFactor})`;
-                        }
-
-                        else if (elementWidth > targetWidth) {
-                            scaleFactor = targetWidth / elementWidth; // Calculate scale-down factor
-                            clone.style.transform = `scale(${scaleFactor})`;
-                        }
-                    }
-                });
-            }
-        }
     </script>
 
     <div id="modalOverlay">
