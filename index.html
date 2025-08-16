@@ -134,6 +134,7 @@
           align-items: center; /* Center items along the cross axis */
           justify-content: space-evenly; /* Distribute space evenly */
           box-sizing: border-box;
+          overflow: hidden;
           /* REMOVE all font-related properties like font-family, font-size, color, etc. */
       }
 
@@ -1392,35 +1393,39 @@ async function savePoster() {
         const charCount = characters.length;
         const imageLoadPromises = [];
           
-        for (const char of characters) {
-            try {
-                const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
-                const img = document.createElement('img');
-                img.src = coloredImageDataUrl;
-                const wrapperDiv = document.createElement('div');
-                wrapperDiv.className = 'char-wrapper';
+        // Inside generateFaiChun(), modify the character wrapper creation:
+for (const char of characters) {
+    try {
+        const coloredImageDataUrl = await createColoredCharacter(char, selectedTextColor);
+        const img = document.createElement('img');
+        img.src = coloredImageDataUrl;
+        const wrapperDiv = document.createElement('div');
+        wrapperDiv.className = 'char-wrapper';
 
-                const loadPromise = new Promise(resolve => { img.onload = resolve; });
-                imageLoadPromises.push(loadPromise);
-                
-                if (orientation === 'vertical') {
-                    // Vertical: Each character takes equal vertical space
-                    wrapperDiv.style.height = `calc(100% / ${charCount})`;
-                } else { 
-                    // Horizontal: Each character takes equal horizontal space
-                    wrapperDiv.style.width = `calc(55% / ${charCount})`;
-                    
-                    // This command makes it a perfect square.
-                    wrapperDiv.style.aspectRatio = '1 / 1';
-                }
-                
-                wrapperDiv.appendChild(img);
-                imageContainer.appendChild(wrapperDiv);
-
-            } catch (error) {
-                console.error("Failed to create colored character:", error);
-            }
+        const loadPromise = new Promise(resolve => { img.onload = resolve; });
+        imageLoadPromises.push(loadPromise);
+        
+        if (orientation === 'vertical') {
+            // Vertical: Each character takes equal vertical space
+            wrapperDiv.style.height = `calc(100% / ${charCount})`;
+            wrapperDiv.style.width = '100%';
+        } else { 
+            // Horizontal: Each character takes equal horizontal space
+            wrapperDiv.style.width = `calc(100% / ${charCount})`;
+            wrapperDiv.style.height = '100%';
         }
+        
+        // Ensure characters stay within bounds
+        wrapperDiv.style.aspectRatio = '1 / 1';
+        wrapperDiv.style.flexShrink = '0'; // Prevent shrinking
+        wrapperDiv.style.overflow = 'hidden'; // Prevent overflow
+        
+        wrapperDiv.appendChild(img);
+        imageContainer.appendChild(wrapperDiv);
+    } catch (error) {
+        console.error("Failed to create colored character:", error);
+    }
+}
 
         // --- DYNAMIC SPACING CALCULATION (AFTER CHARACTERS ARE CREATED) ---
         const firstCharacter = imageContainer.querySelector('.char-wrapper');
