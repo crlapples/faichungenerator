@@ -1480,11 +1480,6 @@ for (const char of characters) {
             // Measure the final pixel size of a character
             const rect = firstCharacter.getBoundingClientRect();
             
-            // Calculate the gap based on your 100px margin / 480px character ratio
-            const gapValue = (50 / 480) * rect.width;
-            
-            // Apply the calculated space between the characters
-            imageContainer.style.gap = `${gapValue}px`;
         }
 
         return Promise.all(imageLoadPromises);
