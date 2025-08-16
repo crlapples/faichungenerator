@@ -1468,7 +1468,7 @@
                 // This logic overrides your static CSS to handle dynamic padding and fix save issues.
                 if (orientation === 'vertical' && characters.length > 0) {
                     // FIX for Vertical Overflow & Squishing:
-                    wrapperDiv.style.flexBasis = '12%';
+                    wrapperDiv.style.flexBasis = '10.5%';
                     wrapperDiv.style.width = '95%';
                     // Prevent flexbox from shrinking the item, giving html2canvas a stable height.
                     wrapperDiv.style.flexShrink = '0';
@@ -1477,7 +1477,7 @@
                     // Set a minimum width of 0, which allows the item to shrink
                     // below its fixed 10rem size when padding is added.
                     wrapperDiv.style.height = '95%';
-                    wrapperDiv.style.flexBasis = '12%';
+                    wrapperDiv.style.flexBasis = '10.5%';
                     wrapperDiv.style.minWidth = '0.5rem';
                     wrapperDiv.style.minHeight = '2rem';
                     wrapperDiv.style.flexShrink = '0';
